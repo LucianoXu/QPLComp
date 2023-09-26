@@ -1,8 +1,13 @@
-import qplcomp
+from qplcomp import *
 import numpy as np
 
 if __name__ == "__main__":
-    env = qplcomp.optenv.get_predefined_optenv()
-    a = np.array([[0.0]])
-    env.append(a)
-    print(env.append(a))
+    env = get_predefined_valenv()
+    QExpr.set_valenv(env)
+
+    a = QOpt("I[q]")
+    c = QOpt("CX[q d]")
+
+    b = a + c
+    print(b)
+    print(b.qval)

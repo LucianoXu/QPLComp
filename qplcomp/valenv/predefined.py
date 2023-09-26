@@ -68,7 +68,7 @@ predefined_optlib = {
     "Idiv2" : np.array(
         [[1., 0.],
         [0., 1.]]
-    )/2,
+    )/2.,
 
     "Zero0" : np.zeros((1,1)),
 

@@ -1,24 +1,24 @@
 #-------------------------------------------------
-# definition of operator environments
+# definition of quantum value environments
 #-------------------------------------------------
 
 from typing import Dict
 import numpy as np
 
-from .. import qopt
+from .. import qval
 
 # the default precision for equivalence check
 PRECISION_DEFAULT = 1e-10
 
-class OptEnv:
+class ValEnv:
     '''
-    The operator environment which relates keys (string) to values (tensors)
+    The value environment which relates keys (string) to values (tensors)
     Note that the environment will check the equivalence of operators based on
     its precision setting.
     '''
     def __init__(self, precision : float = PRECISION_DEFAULT) -> None:
         self.precision : float = precision
-        self._optlib : Dict[str, np.ndarray] = {}
+        self._vallib : Dict[str, np.ndarray] = {}
 
         # the number for auto naming
         self._numbering = 0
@@ -29,7 +29,7 @@ class OptEnv:
         '''
         res = "OP" + str(self._numbering)
         self._numbering += 1
-        while res in self._optlib:
+        while res in self._vallib:
             res = "OP" + str(self._numbering)
             self._numbering += 1
         return res
@@ -41,27 +41,32 @@ class OptEnv:
         If yes, return the corresponding key.
         If not, create a new item with an auto key and return the key used.
         '''
-        for key in self._optlib:
-            if qopt.np_prec_equal(value, self._optlib[key], self.precision):
+        if not isinstance(value, np.ndarray):
+            raise ValueError("Invalid value. Only np.ndarray is allowed.")
+        
+        for key in self._vallib:
+            if qval.np_prec_equal(value, self._vallib[key], self.precision):
                 return key
             
         name = self.get_name()
-        self._optlib[name] = value
+        self._vallib[name] = value
         return name
     
     def __setitem__(self, key : str, value : np.ndarray) -> None:
-        self._optlib[key] = value
+        if not isinstance(value, np.ndarray):
+            raise ValueError("Invalid value. Only np.ndarray is allowed.")
+        self._vallib[key] = value
 
     def __getitem__(self, key : str) -> np.ndarray:
-        return self._optlib[key]
+        return self._vallib[key]
     
 from .predefined import predefined_optlib
 
-def get_predefined_optenv() -> OptEnv:
+def get_predefined_valenv() -> ValEnv:
     '''
     Return a predefined operator environment, where many operators are already provided in [.predefined.py]
     '''
-    optenv = OptEnv()
+    valenv = ValEnv()
     for key in predefined_optlib:
-        optenv[key] = predefined_optlib[key]
-    return optenv
+        valenv[key] = predefined_optlib[key]
+    return valenv
