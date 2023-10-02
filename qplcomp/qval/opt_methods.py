@@ -26,6 +26,21 @@ def np_complex_norm(m : np.ndarray) -> np.ndarray:
     '''
     return np.sqrt(m.real * m.real + m.imag * m.imag)
 
+def get_opt_qnum(m : np.ndarray) -> int:
+    '''
+    get the qubit number of a operator tensor
+    '''
+    if not isinstance(m, np.ndarray):
+        raise Exception()
+    
+    for dim in m.shape:
+        if dim != 2:
+            raise ValueError()
+
+    if len(m.shape) % 2 == 1:
+        raise ValueError()
+    else:
+        return len(m.shape)//2
 
 def check_unity(m : np.ndarray, precision : float) -> bool:
     '''
@@ -80,7 +95,7 @@ def check_hermitian_predicate(m : np.ndarray, precision : float) -> bool:
     return True
 
 
-def eye_tensor(qubitn : int) -> np.ndarray:
+def eye_operator(qubitn : int) -> np.ndarray:
     '''
     return the identity matrix of 'qubitn' qubits, in the form of a (2,2,2,...) tensor, row indices in the front.
     '''
@@ -96,7 +111,19 @@ def dagger(M : np.ndarray) -> np.ndarray:
     return np.conjugate(M).transpose(trans)
 
 
-################################### operation with qvars
+# ################################### operation with qvars
+def opt_mul(A : np.ndarray, B : np.ndarray) -> np.ndarray:
+    '''
+    Calculate and return the multiplication A @ B, where A and B are tensors for quantum operators with the same qubit number.
+    '''
+    if get_opt_qnum(A) != get_opt_qnum(A):
+        raise ValueError("The two tensors should have the same number of qubit numbers.")
+    
+    _A = tensor_to_matrix(A)
+    _B = tensor_to_matrix(B)
+    return matrix_to_tensor(_A @ _B)
+
+
 def opt_apply(M : np.ndarray, qvarM: Sequence[str], O : np.ndarray, qvarO : Sequence[str]) -> np.ndarray:
     '''
     conduct the transformation O.M.O^dagger and return the result operator
@@ -177,42 +204,10 @@ def tensor_to_matrix(t : np.ndarray) -> np.ndarray:
     return t.reshape((ndim, ndim))
 
 
-def opt_extend(M : np.ndarray, qvarM: Sequence[str], qvar_all: Sequence[str]) -> np.ndarray:
+def matrix_to_tensor(t : np.ndarray) -> np.ndarray:
     '''
-    extend the given operator, according to all variables qvar_all, and return
+    transform the quantum operator from a matrix to a tensor
     '''
-    nAll = len(qvar_all)
-    nH = len(qvarM)
-    m_I = eye_tensor(nAll - nH)
+    qubitn = round(np.log2(t.shape[0]))
+    return t.reshape((2,)*2*qubitn)
 
-    temp = np.tensordot(M, m_I, ([],[]))
-
-    # rearrange the indices
-    count_ext = 0
-    r_left = []
-    r_right = []
-    for i in range(nAll):
-        if qvar_all[i] in qvarM:
-            pos = qvarM.index(qvar_all[i])
-            r_left.append(pos)
-            r_right.append(nH + pos)
-        else:
-            r_left.append(2*nH + count_ext)
-            r_right.append(nAll + nH + count_ext)
-            count_ext += 1
-    
-    return temp.transpose(r_left + r_right)
-
-
-def get_opt_qnum(m : np.ndarray) -> int:
-    if not isinstance(m, np.ndarray):
-        raise Exception()
-    
-    for dim in m.shape:
-        if dim != 2:
-            raise ValueError()
-
-    if len(m.shape) % 2 == 1:
-        return (len(m.shape) - 1)//2
-    else:
-        return len(m.shape)//2

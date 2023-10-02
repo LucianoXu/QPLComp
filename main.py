@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     a = QOpt("I[q]")
     c = QOpt("CX[q d]")
-
-    b = a + c
+    
+    b = QOpt("X[q]") @ QOpt("X[q]")
     print(b)
     print(b.qval)

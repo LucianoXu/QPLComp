@@ -117,6 +117,13 @@ class QExpr:
         '''
         pass
 
+    def extend(self, qvarT: QVar) -> QExpr:
+        '''
+        Extend the expression according to the given quantum variables [qvarT], and return the result.
+        '''
+        raise NotImplementedError()
+
+
     def __str__(self) -> str:
         return self._id + str(self.qvar)
     
@@ -174,10 +181,36 @@ class QOpt(QExpr):
             calc_qnum = round(np.log2(self._qval.shape[0]))
             self._qval = np.reshape(self._qval, (2,)*calc_qnum*2)
 
+    def extend(self, qvarT: QVar) -> QOpt:
+        if not qvarT.contains(self.qvar):
+            raise ValueError("The extension target qvar '" + str(qvarT) + "' does not contain the original qvar '" + str(self.qvar) + "'.")
+        
+        m_I = qval.eye_operator(qvarT.qnum - self.qnum)
+
+        temp_qval = np.tensordot(self.qval, m_I, ([],[]))
+
+        # rearrange the indices
+        count_ext = 0
+        r_left = []
+        r_right = []
+        for i in range(qvarT.qnum):
+            if qvarT[i] in self.qvar:
+                pos = self.qvar.index(qvarT[i])
+                r_left.append(pos)
+                r_right.append(self.qnum + pos)
+            else:
+                r_left.append(2*self.qnum + count_ext)
+                r_right.append(qvarT.qnum + self.qvar.qnum + count_ext)
+                count_ext += 1
+
+        return QOpt(temp_qval.transpose(r_left + r_right), qvarT)
+
+
     def __add__(self, other : QOpt) -> QOpt:
         '''
+        Matrix Addition.
         Note that additions between operators on different quantum variables are understood as
-        additions on the cylinder extension.
+        additions on the cylinder extensions.
         '''
         if not isinstance(other, QOpt):
             raise ValueError("A quantum operator can only add another quantum operator.")
@@ -186,8 +219,26 @@ class QOpt(QExpr):
         qvar_all = self._qvar + other._qvar
 
         # cylinder extension
-        m0 = qval.opt_extend(self._qval, self.qvar.tuple, qvar_all.tuple)
-        m1 = qval.opt_extend(other._qval, other.qvar.tuple, qvar_all.tuple)
+        self_ext = self.extend(qvar_all)
+        other_ext = other.extend(qvar_all)
 
         # return the result
-        return QOpt(m0 + m1, qvar_all, check = False)
+        return QOpt(self_ext.qval + other_ext.qval, qvar_all, check = False)
+
+    def __matmul__(self, other : QOpt) -> QOpt:
+        '''
+        Matrix Multiplication.
+        Note that multiplications between operators on different quantum variables are understood as
+        multiplications on the cylinder extensions.
+        '''
+        if not isinstance(other, QOpt):
+            raise ValueError("A quantum operator can only add another quantum operator.")
+
+        # the common qvar
+        qvar_all = self._qvar + other._qvar
+
+        # cylinder extension
+        self_ext = self.extend(qvar_all)
+        other_ext = other.extend(qvar_all)
+
+        return QOpt(qval.opt_mul(self_ext.qval, other_ext.qval), qvar_all, check = False)

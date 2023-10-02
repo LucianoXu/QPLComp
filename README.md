@@ -63,15 +63,11 @@ Check whether two tensors `a` and `b` are equal according to the maximum norm di
   - `precision` : `float`, the threshold precision for equivalence.
 - Returns: `bool`, whether `a` and `b` is equal.
 
+#### `opt_mul(A, B)`
+Calculate and return the multiplication `A @ B`, where `A` and `B` are tensors for quantum operators with the same qubit number.
+- Parameters: `A`, `B` : `np.ndarray`, the two operator tensors.
+- Returns: `np.ndarray`, the multiplication result.
 
-#### `opt_extend(M, qvarM, qvar_all)`
-Get the cylinder extension of the given operator `M`, according to all variables `qvar_all` and return the result.
-It can also be used to permute the indices of `M`.
-- Parameters:
-  - `M` : `np.ndarray`, the operator to be extended. Note that it should be a tensor with 2 dimensional indices.
-  - `qvarM` : `Sequence[str]`, the indices of `M`.
-  - `qvar_all` : `Sequence[str]`, the indices of the extension target.
-- Returns: `np.ndarray`, the extension target.
 
 ## Subpackage: qexpr
 This package provides the data structure and methods for quantum expressions.
@@ -81,6 +77,10 @@ A quantum expression is a quantum operator with the corresponding quantum variab
 ### definitions and methods
 #### `QVar`
 The class for quantum variables (indices)
+##### The methods same as `List[str]`:
+  - `qvar[i]` (`__getitem__`)
+  - `var in qvar` (`__contains__`)
+  - `index(v)`
 ##### `QVar(qvls)`
 Create a quantum variable instance.
 - Parameters: `qvls` : 
@@ -118,6 +118,11 @@ Create a quantum expression with multiple ways.
     - `check=True` : `bool`, controlls wether data check is performed.
 - Returns: `None`.
 
+##### `extend(qvarT)`
+Extend the expression according to the given quantum variables `qvarT`, and return the result.
+- Parameters: `qvarT` : `QVar`, the target quantum variable. **`qvarT` should contain `self.qvar`.**
+- Returns: `QExpr` (or the corresponding child class), the extension result.
+
 ##### `id` (property)
 Return the id of this quantum expression (within the global value environment).
 - Parameters: none.
@@ -145,10 +150,15 @@ Quantum operator - a special kind of quantum expression. It corresponds to matri
 
 ##### `qopt1 + qopt2` (magic method)
 For quantum operators `qopt1` and `qopt2`, return the addition result.
-Additions between operators on different quantum variables are understood as additions on the cylinder extension.
+Additions between operators on different quantum variables are understood as additions on the cylinder extensions.
 - Parameters: `qopt1`, `qopt2` : `QOpt`.
 - Returns: `QOpt`.
 
+##### `qopt1 @ qopt2` (magic method)
+For quantum operators `qopt1` and `qopt2`, return the matrix multiplication result.
+Multiplications between operators on different quantum variables are understood as multiplications on the cylinder extensions.
+- Parameters: `qopt1`, `qopt2` : `QOpt`.
+- Returns: `QOpt`.
 
 
 

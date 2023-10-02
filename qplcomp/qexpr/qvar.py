@@ -47,6 +47,15 @@ class QVar:
     def __str__(self) -> str:
         return QVar._qvls_str(self._qvls)
     
+    def __getitem__(self, i : int) -> str:
+        return self._qvls[i]
+    
+    def __contains__(self, v : str) -> bool:
+        return v in self._qvls
+    
+    def index(self, v : str) -> int:
+        return self._qvls.index(v)
+    
     def __add__(self, other : 'QVar') -> 'QVar':
         '''
         return the quantum variable that contains [self] and [other]
