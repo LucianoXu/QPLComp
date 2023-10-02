@@ -29,7 +29,7 @@ class QExpr:
     def __init__(self, *args, **kwargs):
         '''
         Create a quantum expression with multiple ways:
-        - a string of "qval[qvar]" to be parsed, here qvar is the id.
+        - a string of "qval[qvar]" to be parsed, here qval is the id.
         - two arguments: the first can be an id or a qval, and the second can be a QVar or a string to be parsed.
         The boolean argument with key "check" controlls wether data check is performed. The default value is True.
         '''
@@ -124,7 +124,8 @@ class QExpr:
 
 class QOpt(QExpr):
     '''
-    Quantum operator - a special kind of quantum expression
+    Quantum operator - a special kind of quantum expression.
+    It corresponds to matrices like density operators, unitary operators and Hermitian operators.
     '''
 
     def validity_check(self) -> None:
