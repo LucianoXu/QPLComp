@@ -9,3 +9,4 @@ from .opt_methods import np_prec_equal
 from .opt_methods import eye_operator
 
 from .opt_methods import opt_mul
+from .opt_methods import opt_dagger

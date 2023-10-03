@@ -242,3 +242,29 @@ class QOpt(QExpr):
         other_ext = other.extend(qvar_all)
 
         return QOpt(qval.opt_mul(self_ext.qval, other_ext.qval), qvar_all, check = False)
+    
+    def dagger(self) -> QOpt:
+        '''
+        Return the conjugate transpose of this expression.
+        '''
+        return QOpt(qval.opt_dagger(self.qval), self.qvar)
+    
+
+    # def init(self, qvar_init: QVar) -> QOpt:
+    #     '''
+    #     Initialize the quantum expression at variables 'qvar_init'.
+    #     '''
+    #     P0 = np.array([[1., 0.],
+    #                     [0., 0.]])
+    #     P1 = np.array([[0., 0.],
+    #                     [1., 0.]])
+    #     # initialize all the variables in order
+    #     temp = self
+    #     for var in qvar_init:
+    #         exprP0 = QOpt(P0, QVar([var]))
+    #         exprP1 = QOpt(P1, QVar([var]))
+    #         a = opt_apply(temp, qvarM, P0, (var,))
+    #         b = opt_apply(temp, qvarM, P1, (var,))
+    #         tempH = a + b
+        
+    #     return temp

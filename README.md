@@ -63,6 +63,12 @@ Check whether two tensors `a` and `b` are equal according to the maximum norm di
   - `precision` : `float`, the threshold precision for equivalence.
 - Returns: `bool`, whether `a` and `b` is equal.
 
+#### `opt_dagger(A)`
+Calculate and return the conjugate transpose of operator tensor A.
+- Parameters: `A` : `np.ndarray`, an operator tensor.
+- Returns: `np.ndarray`, the conjugate transpose.
+
+
 #### `opt_mul(A, B)`
 Calculate and return the multiplication `A @ B`, where `A` and `B` are tensors for quantum operators with the same qubit number.
 - Parameters: `A`, `B` : `np.ndarray`, the two operator tensors.
@@ -158,6 +164,11 @@ Additions between operators on different quantum variables are understood as add
 For quantum operators `qopt1` and `qopt2`, return the matrix multiplication result.
 Multiplications between operators on different quantum variables are understood as multiplications on the cylinder extensions.
 - Parameters: `qopt1`, `qopt2` : `QOpt`.
+- Returns: `QOpt`.
+
+##### `dagger()`
+Return the conjugate transpose of this expression.
+- Parameters: none.
 - Returns: `QOpt`.
 
 
