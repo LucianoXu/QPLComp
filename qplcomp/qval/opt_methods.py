@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# methods.py
+# opt_methods.py
 #
 # Note: the quantum operators here in concern are tensors with 
 # (2*qnum) indices, with the row indices in front of the column indices.
@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, List, Sequence
 
 import numpy as np 
+from .m_methods import np_prec_equal, loewner_le, Schmidt_decomposition
 
 '''
 conduct the transformation O.M.O^dagger and return the result operator
@@ -53,22 +54,6 @@ def matrix_to_tensor(t : np.ndarray) -> np.ndarray:
 #####################################
 # operator tensor property
 
-def np_prec_equal(a : np.ndarray, b : np.ndarray, precision : float) -> bool:
-    '''
-    check whether two tensors a and b are equal, according to maximum norm.
-    '''
-    if a.shape != b.shape :
-        return False
-
-    diff : float = np.max(np_complex_norm(a - b))  # type: ignore
-    return diff < precision
-
-
-def np_complex_norm(m : np.ndarray) -> np.ndarray:
-    '''
-    calculate the element wise norm
-    '''
-    return np.sqrt(m.real * m.real + m.imag * m.imag)
 
 def get_opt_qnum(m : np.ndarray) -> int:
     '''
@@ -173,3 +158,39 @@ def opt_mul(A : np.ndarray, B : np.ndarray) -> np.ndarray:
     _A = tensor_to_matrix(A)
     _B = tensor_to_matrix(B)
     return matrix_to_tensor(_A @ _B)
+
+def opt_loewner_le(A : np.ndarray, B : np.ndarray, precision : float) -> bool:
+    '''
+    Decide whether the two operator tensors A and B follow the loewner order A <= B. The comparison between eigenvalues are conducted with respected to the given precision.
+    '''
+    return loewner_le(tensor_to_matrix(A), tensor_to_matrix(B), precision)
+
+
+def proj_disjunct(P : np.ndarray, Q : np.ndarray, precision : float) -> np.ndarray:
+    '''
+    Calculate and return the disjunction of subspaces represented by projectors P and Q.
+
+    P and Q are operator tensors.
+    '''
+    mP = tensor_to_matrix(P)
+    mQ = tensor_to_matrix(Q)
+    eigvalP, eigvecP = np.linalg.eigh(mP)
+    eigvalQ, eigvecQ = np.linalg.eigh(mQ)
+
+    dim = mP.shape[0]
+
+    # only preserve the 1-eigenvalue vectors
+    eigvec = np.array([]).reshape((dim,0))
+    for i in range(len(eigvalP)):
+        if eigvalP[i] > precision:
+            eigvec = np.hstack((eigvec, eigvecP[:,i].reshape((dim, 1))))
+    for i in range(len(eigvalQ)):
+        if eigvalQ[i] > precision:
+            eigvec = np.hstack((eigvec, eigvecQ[:,i].reshape((dim, 1))))
+
+    # check whether it is zero projection
+    if eigvec.shape[1] == 0:
+        return matrix_to_tensor(np.zeros_like(mP))
+    else:
+        ortho = Schmidt_decomposition(eigvec, precision)
+        return matrix_to_tensor(ortho @ ortho.transpose().conj())

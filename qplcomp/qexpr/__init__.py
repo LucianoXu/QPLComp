@@ -8,4 +8,6 @@ A quantum expression is a quantum operator with the corresponding quantum variab
 '''
 
 from .qvar import QVar
-from .qexpr import QExpr, QOpt
+from .qexpr import QExpr
+from .qopt import QOpt
+from .qproj import QProj

@@ -5,9 +5,17 @@ if __name__ == "__main__":
     env = get_predefined_valenv()
     QExpr.set_valenv(env)
 
-    a = QOpt("I[q]")
-    c = QOpt("CX[q d]")
-    
-    b = QOpt("Y[q]") @ QOpt("Y[q]")
-    print(b)
-    print(b.qval)
+    a = QOpt("CX[p q]")
+    b = QOpt("CX[q p]")
+
+    # dirac-notation decision procedure?
+
+    P0 = QProj("P0[q]")
+    Pm = QProj("Pm[p]")
+
+    x = Pm | P0
+
+    print(x @ x)
+
+    # print(Pm <= Pm.disjunct(P0))
+

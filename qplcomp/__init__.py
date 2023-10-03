@@ -11,4 +11,4 @@ from . import qexpr
 
 from .valenv import get_predefined_valenv
 
-from .qexpr import QVar, QExpr, QOpt
+from .qexpr import QVar, QExpr, QOpt, QProj

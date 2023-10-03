@@ -63,6 +63,16 @@ Check whether two tensors `a` and `b` are equal according to the maximum norm di
   - `precision` : `float`, the threshold precision for equivalence.
 - Returns: `bool`, whether `a` and `b` is equal.
 
+#### `Schmidt_decomposition(A, precision)`
+Calculate and return the Schmidt decomposition of a set of vectors given by columns in `A`. 
+
+Note: the linear dependent vectors are ruled out (with given precision).
+- Parameters: 
+  - `A` : `np.ndarray`, a matrix.
+  - `precision` : `float`.\
+- Returns: `np.ndarray`, a matrix containing the orthonormal basis as columns.
+
+
 #### `opt_dagger(A)`
 Calculate and return the conjugate transpose of operator tensor A.
 - Parameters: `A` : `np.ndarray`, an operator tensor.
@@ -74,6 +84,30 @@ Calculate and return the multiplication `A @ B`, where `A` and `B` are tensors f
 - Parameters: `A`, `B` : `np.ndarray`, the two operator tensors.
 - Returns: `np.ndarray`, the multiplication result.
 
+#### `opt_loewner_le(A, B, precision)`
+Decide whether the two operator tensors `A` and `B` follow the loewner order `A <= B`. The comparison between eigenvalues are conducted with respected to the given precision.
+- Parameters: 
+  - `A`, `B` : `np.ndarray`.
+  - `precision` : `float`.
+- Returns: `bool`, whether `A` is smaller than `B`.
+
+#### `proj_disjunct(P, Q, precision)`
+Calculate and return the disjunction of subspaces represented by projectors `P` and `Q`.
+
+`P` and `Q` are operator tensors.
+- Parameters: 
+  - `P`, `Q` : `np.ndarray`.
+  - `precision` : `float`, used to decide the linear dependency among vectors.
+- Returns: `np.ndarray`.
+
+
+
+
+**Note: this method will not check whether `A` and `B` are Hermitian or not.**
+- Parameters:
+  - `A`, `B` : `np.ndarray`.
+  - `precision` : `float`.
+- Returns: `bool`, whether `A` is smaller than `B`.
 
 ## Subpackage: qexpr
 This package provides the data structure and methods for quantum expressions.
@@ -171,6 +205,22 @@ Return the conjugate transpose of this expression.
 - Parameters: none.
 - Returns: `QOpt`.
 
+##### `qopt1 <= qopt2` (magic method)
+Decide the Loewner order `qopt1 <= qopt2`.
+- Parameters: `qopt1`, `qopt2` : `QOpt`.
+- Returns: `bool`, whether `qopt1` is smaller than `qopt2`.
 
 
 
+#### `QProj`
+Quantum projector - a special kind of quantum expression.
+A projector `P` satisfies `P^2 = P`.
+
+
+##### `disjunct(other)` (or `self | other`)
+Calculate and return the disjunction for subspaces of `self` and `other`.
+
+The magic method notation for disjunction is `self & other`.
+- Parameters: `other` : `QProj`.
+- Returns: `QProj`, the disjunction.
+- Errors: `ValueError` when `other` is not `QProj`.
