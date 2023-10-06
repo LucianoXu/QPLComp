@@ -49,3 +49,20 @@ class QProj(QOpt):
 
     def __or__(self, other : QProj) -> QProj:
         return self.disjunct(other)
+    
+    def conjunct(self, other : QProj) -> QProj:
+        '''
+        Calculate and return the conjunction of subspaces self and other.
+        '''
+        if not isinstance(other, QProj):
+            raise ValueError("The parameter should be a QProj instance.")
+        
+        qvar_all = self.qvar + other.qvar
+        P = self.extend(qvar_all).qval
+        Q = other.extend(qvar_all).qval
+
+        PandQ = qval.proj_conjunct(P, Q, self.valenv.precision)
+        return QProj(PandQ, qvar_all, check = False)
+
+    def __and__(self, other : QProj) -> QProj:
+        return self.conjunct(other)

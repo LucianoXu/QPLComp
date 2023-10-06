@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any, List, Sequence
 
 import numpy as np 
-from .m_methods import np_prec_equal, loewner_le, Schmidt_decomposition
+from .m_methods import np_prec_equal, loewner_le, Schmidt_decomposition, right_non_null_space_h, right_null_space
 
 '''
 conduct the transformation O.M.O^dagger and return the result operator
@@ -166,6 +166,7 @@ def opt_loewner_le(A : np.ndarray, B : np.ndarray, precision : float) -> bool:
     return loewner_le(tensor_to_matrix(A), tensor_to_matrix(B), precision)
 
 
+
 def proj_disjunct(P : np.ndarray, Q : np.ndarray, precision : float) -> np.ndarray:
     '''
     Calculate and return the disjunction of subspaces represented by projectors P and Q.
@@ -174,23 +175,47 @@ def proj_disjunct(P : np.ndarray, Q : np.ndarray, precision : float) -> np.ndarr
     '''
     mP = tensor_to_matrix(P)
     mQ = tensor_to_matrix(Q)
-    eigvalP, eigvecP = np.linalg.eigh(mP)
-    eigvalQ, eigvecQ = np.linalg.eigh(mQ)
-
-    dim = mP.shape[0]
 
     # only preserve the 1-eigenvalue vectors
-    eigvec = np.array([]).reshape((dim,0))
-    for i in range(len(eigvalP)):
-        if eigvalP[i] > precision:
-            eigvec = np.hstack((eigvec, eigvecP[:,i].reshape((dim, 1))))
-    for i in range(len(eigvalQ)):
-        if eigvalQ[i] > precision:
-            eigvec = np.hstack((eigvec, eigvecQ[:,i].reshape((dim, 1))))
+    stacked = np.hstack((right_non_null_space_h(mP, precision), right_non_null_space_h(mQ, precision)))
 
     # check whether it is zero projection
-    if eigvec.shape[1] == 0:
+    if stacked.shape[1] == 0:
         return matrix_to_tensor(np.zeros_like(mP))
     else:
-        ortho = Schmidt_decomposition(eigvec, precision)
+        # orthonormalization
+        ortho = Schmidt_decomposition(stacked, precision)
+        return matrix_to_tensor(ortho @ ortho.transpose().conj())
+
+def proj_conjunct(P : np.ndarray, Q : np.ndarray, precision : float) -> np.ndarray:
+    '''
+    Calculate and return the conjunction of subspaces represented by projectors P and Q.
+
+    P and Q are operator tensors.
+    '''
+    mP = tensor_to_matrix(P)
+    mQ = tensor_to_matrix(Q)
+
+    spaceP = right_non_null_space_h(mP, precision)
+    spaceQ = right_non_null_space_h(mQ, precision)
+
+    dimP = spaceP.shape[1]
+
+    # only preserve the 1-eigenvalue vectors
+    stacked = np.hstack((spaceP, spaceQ))
+
+
+    # calculate the right zero space of the stacked matrix [spaceP | spaceQ]
+    rnspace = right_null_space(stacked, precision)
+
+
+    # check whether it is zero projection
+    if rnspace.shape[1] == 0:
+        return matrix_to_tensor(np.zeros_like(mP))
+    else:
+        # get a set of vectors for the conjunction space
+        conjunct_space = spaceP @ rnspace[:dimP]
+
+        # orthonormalization
+        ortho = Schmidt_decomposition(conjunct_space, precision)
         return matrix_to_tensor(ortho @ ortho.transpose().conj())

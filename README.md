@@ -100,6 +100,14 @@ Calculate and return the disjunction of subspaces represented by projectors `P` 
   - `precision` : `float`, used to decide the linear dependency among vectors.
 - Returns: `np.ndarray`.
 
+#### `proj_conjunct(P, Q, precision)`
+Calculate and return the conjunction of subspaces represented by projectors `P` and `Q`.
+
+`P` and `Q` are operator tensors.
+- Parameters: 
+  - `P`, `Q` : `np.ndarray`.
+  - `precision` : `float`, used to decide the linear dependency among vectors.
+- Returns: `np.ndarray`.
 
 
 
@@ -220,7 +228,15 @@ A projector `P` satisfies `P^2 = P`.
 ##### `disjunct(other)` (or `self | other`)
 Calculate and return the disjunction for subspaces of `self` and `other`.
 
-The magic method notation for disjunction is `self & other`.
+The magic method notation for disjunction is `self | other`.
 - Parameters: `other` : `QProj`.
 - Returns: `QProj`, the disjunction.
+- Errors: `ValueError` when `other` is not `QProj`.
+
+##### `conjunct(other)` (or `self & other`)
+Calculate and return the conjunction for subspaces of `self` and `other`.
+
+The magic method notation for conjunction is `self & other`.
+- Parameters: `other` : `QProj`.
+- Returns: `QProj`, the conjunction.
 - Errors: `ValueError` when `other` is not `QProj`.

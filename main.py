@@ -13,9 +13,10 @@ if __name__ == "__main__":
     P0 = QProj("P0[q]")
     Pm = QProj("Pm[p]")
 
-    x = Pm | P0
+    x = Pm & P0
 
-    print(x @ x)
+    print(x)
+    print(x.qval)
 
     # print(Pm <= Pm.disjunct(P0))
 

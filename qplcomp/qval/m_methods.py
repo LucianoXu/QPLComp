@@ -95,3 +95,37 @@ def Schmidt_decomposition(A : np.ndarray, precision : float) -> np.ndarray:
             ortho = np.hstack((ortho, veci_normalized.reshape((dim, 1))))
     
     return ortho
+
+
+def right_non_null_space_h(m : np.ndarray, precision: float) -> np.ndarray:
+    '''
+    Calculate the right non-zero space of matrix m.
+    Note: m should be Hermitian.
+    '''
+    dim = m.shape[0]
+    eigval, eigvec = np.linalg.eigh(m)
+    res = np.array([]).reshape((dim,0))
+    for i in range(dim):
+        if eigval[i] > precision:
+            res = np.hstack((res, eigvec[:,i].reshape((dim, 1))))
+
+    return res
+
+
+def right_null_space(m : np.ndarray, precision : float) -> np.ndarray:
+    '''
+    Calculate the right-null space of m. Return a matrix consisting of the orthonormal basis as columns.
+    '''
+    U, S, V = np.linalg.svd(m)
+
+    # find the rank
+    rank = len(S)
+    for i in range(len(S)):
+        if S[i] < precision:
+            rank = i
+            break
+
+    return V[rank:].transpose().conj()
+
+
+
