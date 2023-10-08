@@ -57,6 +57,8 @@ class Parser:
 
 precedence = (
     ('left', '+', '-'),
+    ('left', 'DISJUNCT'),
+    ('left', 'CONJUNCT'),
     ('left', '*', 'OTIMES'),
     ('left', 'DAGGER'),
 )
@@ -76,15 +78,48 @@ def p_variable(p):
     p[0] = Variable(p[1], Parser.Global)
 
 
-from .eiqopt import EIQOpt
+from .eiqopt import EIQOpt, EIQOptAdd, EIQOptNeg, EIQOptSub, EIQOptMul, EIQOptDagger, EIQOptTensor, EIQOptDisjunct, EIQOptConjunct
 def p_eiqopt(p):
     '''
     eiqopt  : eqopt eqvar
+            | '(' eiqopt ')'
+            | '(' '-' eiqopt ')'
+            | eiqopt '+' eiqopt
+            | eiqopt '-' eiqopt
+            | eiqopt '*' eiqopt
+            | eiqopt eiqopt %prec '*'
+            | eiqopt DAGGER
+            | eiqopt OTIMES eiqopt
+            | eiqopt DISJUNCT eiqopt
+            | eiqopt CONJUNCT eiqopt
     '''
-    p[0] = EIQOpt(p[1], p[2], Parser.Global)
+    if len(p) == 3 and p.slice[1].type == 'eqopt' and p.slice[2].type == 'eqvar':
+        p[0] = EIQOpt(p[1], p[2], Parser.Global)
+    elif len(p) == 4 and p[1] == '(' and p[2] == ')':
+        p[0] = p[1]
+    elif len(p) == 5 and p[2] == '-':
+        p[0] = EIQOptNeg(p[3], Parser.Global)
+    elif len(p) == 4 and p[2] == '+':
+        p[0] = EIQOptAdd(p[1], p[3], Parser.Global)
+    elif len(p) == 4 and p[2] == '-':
+        p[0] = EIQOptSub(p[1], p[3], Parser.Global)
+    elif len(p) == 4 and p[2] == '*':
+        p[0] = EIQOptMul(p[1], p[3], Parser.Global)
+    elif len(p) == 3 and p.slice[2].type == 'eiqopt':
+        p[0] = EIQOptMul(p[1], p[2], Parser.Global)
+    elif p.slice[2].type == 'DAGGER':
+        p[0] = EIQOptDagger(p[1], Parser.Global)
+    elif p.slice[2].type == 'OTIMES':
+        p[0] = EIQOptTensor(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'DISJUNCT':
+        p[0] = EIQOptDisjunct(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'CONJUNCT':
+        p[0] = EIQOptConjunct(p[1], p[3], Parser.Global)
+    else:
+        raise Exception()
 
 
-from .eqopt import EQOpt, EQOptAdd, EQOptNeg, EQOptSub, EQOptMul, EQOptDagger, EQOptTensor
+from .eqopt import EQOpt, EQOptAdd, EQOptNeg, EQOptSub, EQOptMul, EQOptDagger, EQOptTensor, EQOptDisjunct, EQOptConjunct
 def p_eqopt(p):
     '''
     eqopt   : variable
@@ -96,12 +131,14 @@ def p_eqopt(p):
             | eqopt eqopt %prec '*'
             | eqopt DAGGER
             | eqopt OTIMES eqopt
+            | eqopt DISJUNCT eqopt
+            | eqopt CONJUNCT eqopt
     '''
     if len(p) == 2:
         p[0] = p[1]
-    elif len(p) == 4 and p[1] == '(':
+    elif len(p) == 4 and p[1] == '(' and p[3] == ')':
         p[0] = p[2]
-    elif len(p) == 5:
+    elif len(p) == 5 and p[2] == '-':
         p[0] = EQOptNeg(p[3], Parser.Global)
     elif p[2] == '+':
         p[0] = EQOptAdd(p[1], p[3], Parser.Global)
@@ -115,6 +152,10 @@ def p_eqopt(p):
         p[0] = EQOptDagger(p[1], Parser.Global)
     elif p.slice[2].type == 'OTIMES':
         p[0] = EQOptTensor(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'DISJUNCT':
+        p[0] = EQOptDisjunct(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'CONJUNCT':
+        p[0] = EQOptConjunct(p[1], p[3], Parser.Global)
     else:
         raise Exception()
 

@@ -12,12 +12,16 @@ tokens = [
     'ID',
     'OTIMES',
     'DAGGER',
+    'DISJUNCT',
+    'CONJUNCT',
  ]
  
 literals = ['(', ')', '[', ']', '+', '-', '*']
 
 t_OTIMES = r"⊗|\\otimes"
 t_DAGGER = r"†|\^\\dagger"
+t_DISJUNCT = r"∨|\\vee"
+t_CONJUNCT = r"∧|\\wedge"
 
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'

@@ -147,6 +147,7 @@ class EQOptMul(Expr):
     The expression for subtractions of quantum operators.
 
     EQOptMul ::= (a : QOpt) (b : QOpt)
+                | (a : QOpt) '*' (b : QOpt)
     
     Nonterminal.
     '''
@@ -244,5 +245,78 @@ class EQOptTensor(Expr):
     
     def __str__(self) -> str:
         return "(" + str(self._optA) + "⊗ " + str(self._optB) + ")"
+    
+    ##################################
+
+
+class EQOptDisjunct(Expr):
+    '''
+    The expression for disjunction of projective quantum operators.
+
+    EQOptDisjunct ::= (a : QOpt) '\\vee' (b : QOpt)
+                    | (a : QOpt) '∨' (b : QOpt)
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, optA : Expr, optB : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(optA, Expr)
+        expr_type_check(optA, QOpt)
+        self._optA = optA
+
+        type_check(optB, Expr)
+        expr_type_check(optB, QOpt)
+        self._optB = optB
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return QOpt
+    
+    def eval(self) -> object:
+        return self._optA.eval() | self._optB.eval()    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._optA) + " ∨ " + str(self._optB) + ")"
+    
+    ##################################
+
+class EQOptConjunct(Expr):
+    '''
+    The expression for conjunction of projective quantum operators.
+
+    EQOptConjunct   ::= (a : QOpt) '\\wedge' (b : QOpt)
+                    | (a : QOpt) '∧' (b : QOpt)
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, optA : Expr, optB : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(optA, Expr)
+        expr_type_check(optA, QOpt)
+        self._optA = optA
+
+        type_check(optB, Expr)
+        expr_type_check(optB, QOpt)
+        self._optB = optB
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return QOpt
+    
+    def eval(self) -> object:
+        return self._optA.eval() & self._optB.eval()    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._optA) + " ∧ " + str(self._optB) + ")"
     
     ##################################

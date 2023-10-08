@@ -1,11 +1,17 @@
 from qplcomp import *
 import numpy as np
 
-if __name__ == "__main__":
-    a = Parser.parse("(X X)†[p]")
-    b = Parser.parse("Pm[q]")
+def Demo(code : str) -> None:
+    A = Parser.parse(code)
+    print("Input String: "+ code)
+    print("Parsing Result: " + str(A))
+    print("Value: ")
+    print(A.eval())
+    print()
 
-    print(a)
-    print(a.eval())
+if __name__ == "__main__":
+    Demo("P1 \\vee P1")
+    Demo("P0[p] + (- P1[p])")
+
     # print(Pm <= Pm.disjunct(P0))
 

@@ -63,7 +63,7 @@ class IQOpt(IQVal):
 
         # cylinder extension
         self_ext = self.extend(qvar_all)
-        other_ext = self.extend(qvar_all)
+        other_ext = other.extend(qvar_all)
 
         # return the result
         return IQOpt(self_ext.qval + other_ext.qval, qvar_all)
