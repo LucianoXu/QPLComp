@@ -51,7 +51,7 @@ class IQOpt(IQVal):
     def __add__(self, other : IQOpt) -> IQOpt:
         '''
         For indexed quantum operators `self` and `other`, return the addition result.
-        Additions between operators on different quantum variables are understood as additions on the cylinder extensions.
+        Automatic cylinder extension is applied.
         - Parameters: `self`, `other` : `IQOpt`.
         - Returns: `IQOpt`.
         '''
@@ -69,10 +69,42 @@ class IQOpt(IQVal):
         return IQOpt(self_ext.qval + other_ext.qval, qvar_all)
 
 
+    def neg(self) -> IQOpt:
+        '''
+        Return the negation of `self`.
+        - Parameters: none.
+        - Returns: `IQOpt`.
+        '''
+
+        return IQOpt(-self.qval, self.qvar)
+    
+    def __neg__(self) -> IQOpt:
+        return self.neg()
+    
+    def __sub__(self, other : IQOpt) -> IQOpt:
+        '''
+        For indexed quantum operators `self` and `other`, return the subtraction result.
+        Automatic cylinder extension is applied.
+        - Parameters: `self`, `other` : `IQOpt`.
+        - Returns: `IQOpt`.
+        '''
+        return self + (- other)
+
+    
+    def dagger(self) -> IQOpt:
+        '''
+        Return the conjugate transpose of `self`.
+        - Parameters: none.
+        - Returns: `IQOpt`.
+        '''
+
+        return IQOpt(self.qval.dagger(), self.qvar)
+    
+
     def __matmul__(self, other : IQOpt) -> IQOpt:
         '''
         For indexed quantum operators `self` and `other`, return the matrix multiplication result.
-        Multiplications between operators on different quantum variables are understood as additions on the cylinder extensions.
+        Automatic cylinder extension is applied.
         - Parameters: `self`, `other` : `IQOpt`.
         - Returns: `IQOpt`.
         '''
@@ -87,14 +119,20 @@ class IQOpt(IQVal):
 
         return IQOpt(self_ext.qval @ other_ext.qval, qvar_all)
     
-    def dagger(self) -> IQOpt:
+    def tensor(self, other : IQOpt) -> IQOpt:
         '''
-        Return the conjugate transpose of 'self'.
-        - Parameters: none.
+        For indexed quantum operators `self` and `other`, return the tensor result. Note that self and other should be disjoint on their quantum variables.
+        - Parameters: `self`, `other` : `IQOpt`.
         - Returns: `IQOpt`.
         '''
+        type_check(other, IQOpt)
 
-        return IQOpt(self.qval.dagger(), self.qvar)
+        if not self.qvar.disjoint(other.qvar):
+            raise ValueError("The quantum variable '" + str(self.qvar) + "' is not disjoint with '" + str(other.qvar) + "'.")
+        
+        qvar_all = self.qvar + other.qvar
+
+        return IQOpt(self.qval.tensor(other.qval), qvar_all)
     
     def Loewner_le(self, other : IQOpt) -> bool:
         '''

@@ -9,10 +9,15 @@ import ply.lex as lex
 
 
 tokens = [
-    'ID'
+    'ID',
+    'OTIMES',
+    'DAGGER',
  ]
  
-literals = ['[', ']']
+literals = ['(', ')', '[', ']', '+', '-', '*']
+
+t_OTIMES = r"⊗|\\otimes"
+t_DAGGER = r"†|\^\\dagger"
 
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -26,4 +31,5 @@ def t_error(t):
 
 
 # Build the lexer
-lexer = lex.lex()
+import re
+lexer = lex.lex(reflags = re.UNICODE)

@@ -55,7 +55,7 @@ class QVar:
     def index(self, v : str) -> int:
         return self._qvls.index(v)
     
-    def __add__(self, other : 'QVar') -> 'QVar':
+    def __add__(self, other : QVar) -> QVar:
         '''
         return the quantum variable that contains [self] and [other]
         '''
@@ -68,9 +68,9 @@ class QVar:
         
         return QVar(r)
     
-    def contains(self, other : 'QVar') -> bool:
+    def contains(self, other : QVar) -> bool:
         '''
-        test whether the quantum variable [self] contains [other]
+        Test whether the quantum variable `self` contains `other`.
         '''
         type_check(other, QVar)
 
@@ -80,6 +80,18 @@ class QVar:
         
         return True
     
-    def on_same_var(self, other : 'QVar') -> bool:
+    def on_same_var(self, other : QVar) -> bool:
 
         return self.contains(other) and other.contains(self)
+    
+    def disjoint(self, other : QVar) -> bool:
+        '''
+        Test whether the quantum variable `self` and `other` are disjoint.
+        '''
+        type_check(other, QVar)
+
+        for qv in self._qvls:
+            if qv in other._qvls:
+                return False
+            
+        return True

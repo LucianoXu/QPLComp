@@ -154,6 +154,43 @@ class QOpt(QVal):
     # Methods of QOpt
     ################################################
 
+    
+    def __add__(self, other : QOpt) -> QOpt:
+        '''
+        Calculate and return the addition result of self and other.
+        Operators must be of the same qubit number.
+        - Parameters: `self`, `other` : `QOpt`.
+        - Returns: `QOpt`.
+        '''
+
+        type_check(other, QOpt)
+        if self.qnum != other.qnum:
+            raise ValueError("The two QOpt should have the same number of qubit numbers.")
+        
+        return QOpt(self.t_repr + other.t_repr)
+        
+    def neg(self) -> QOpt:
+        '''
+        Calculate and return the negation of this QOpt instance.
+        
+        Parameters: none.
+        Returns: QOpt, the result.
+        '''
+        return QOpt(-self.t_repr)
+    
+    def __neg__(self) -> QOpt:
+        return self.neg()
+    
+    def __sub__(self, other : QOpt) -> QOpt:
+        '''
+        Calculate and return the subtraction result of self and other.
+        Operators must be of the same qubit number.
+        - Parameters: `self`, `other` : `QOpt`.
+        - Returns: `QOpt`.
+        '''
+        return self + (- other)
+
+
     def dagger(self) -> QOpt:
         '''
         Calculate and return the conjugate transpose of this QOpt instance.
@@ -254,20 +291,6 @@ class QOpt(QVal):
                     is_effect=self._effect,
                     is_projector=self._projector)
     
-    def __add__(self, other : QOpt) -> QOpt:
-        '''
-        Calculate and return the addition result of self and other.
-        Operators must be of the same qubit number.
-        - Parameters: `self`, `other` : `QOpt`.
-        - Returns: `QOpt`.
-        '''
-
-        type_check(other, QOpt)
-        if self.qnum != other.qnum:
-            raise ValueError("The two QOpt should have the same number of qubit numbers.")
-        
-        return QOpt(self.t_repr + other.t_repr)
-        
 
     
     def Loewner_le(self, other : QOpt) -> bool:

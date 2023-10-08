@@ -50,6 +50,17 @@ class Parser:
         return res
 
 
+
+############################################################
+# parsing rules
+############################################################
+
+precedence = (
+    ('left', '+', '-'),
+    ('left', '*', 'OTIMES'),
+    ('left', 'DAGGER'),
+)
+
 def p_output(p):
     '''
     output  : eiqopt
@@ -73,12 +84,39 @@ def p_eiqopt(p):
     p[0] = EIQOpt(p[1], p[2], Parser.Global)
 
 
-from .eqopt import EQOpt
+from .eqopt import EQOpt, EQOptAdd, EQOptNeg, EQOptSub, EQOptMul, EQOptDagger, EQOptTensor
 def p_eqopt(p):
     '''
     eqopt   : variable
+            | '(' eqopt ')'
+            | '(' '-' eqopt ')'
+            | eqopt '+' eqopt
+            | eqopt '-' eqopt
+            | eqopt '*' eqopt
+            | eqopt eqopt %prec '*'
+            | eqopt DAGGER
+            | eqopt OTIMES eqopt
     '''
-    p[0] = p[1]
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4 and p[1] == '(':
+        p[0] = p[2]
+    elif len(p) == 5:
+        p[0] = EQOptNeg(p[3], Parser.Global)
+    elif p[2] == '+':
+        p[0] = EQOptAdd(p[1], p[3], Parser.Global)
+    elif p[2] == '-':
+        p[0] = EQOptSub(p[1], p[3], Parser.Global)
+    elif p[2] == '*':
+        p[0] = EQOptMul(p[1], p[3], Parser.Global)
+    elif len(p) == 3 and p.slice[2].type == 'eqopt':
+        p[0] = EQOptMul(p[1], p[2], Parser.Global)
+    elif p.slice[2].type == 'DAGGER':
+        p[0] = EQOptDagger(p[1], Parser.Global)
+    elif p.slice[2].type == 'OTIMES':
+        p[0] = EQOptTensor(p[1], p[3], Parser.Global)
+    else:
+        raise Exception()
 
 
 from .eqvar import EQVar
