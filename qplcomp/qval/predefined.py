@@ -4,6 +4,8 @@
 # ------------------------------------------------------------
 
 import numpy as np
+from typing import Dict
+
 
 predefined_optlib = {
     # unitary
@@ -209,3 +211,13 @@ predefined_optlib = {
 #          [0., 0., 0., 0.]]]
 #     ).reshape((2,2,2,2,2)),
 # }
+
+
+# transform to QVal instances
+
+from .val import QVal
+from .qopt import QOpt
+
+qvallib : Dict[str, QVal]= {}
+for key in predefined_optlib:
+    qvallib[key] = QOpt(predefined_optlib[key])

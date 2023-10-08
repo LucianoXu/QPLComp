@@ -1,25 +1,26 @@
 from __future__ import annotations
-from typing import List, Tuple
+from typing import List, Tuple, Type
 
-from .parser import parser
+from ..sugar import type_check
 
 class QVar:
     '''
-    The class for quantum variables (indices)
+    The class for quantum variables (indices).
     '''
-    def __init__(self, qvls : List[str] | str):
-        # if parsing is needed
-        if isinstance(qvls, str):
-            qvls = parser.parse(qvls)
+    def __init__(self, qvls : List[str]):
 
         # check for repetition
         temp = []
         for v in qvls:
             if v in temp:
-                raise ValueError("The variable '" + v + "' appears in the qvar '" + QVar._qvls_str(temp) + "' more than once.")
+                raise ValueError("The variable '" + v + "' appears in the qvar '" + QVar._qvls_str(qvls) + "' more than once.")
             temp.append(v)
             
         self._qvls = temp
+
+        
+    def __str__(self) -> str:
+        return QVar._qvls_str(self._qvls)
     
     @property
     def qnum(self) -> int:
@@ -44,8 +45,6 @@ class QVar:
         return r + "]"
 
 
-    def __str__(self) -> str:
-        return QVar._qvls_str(self._qvls)
     
     def __getitem__(self, i : int) -> str:
         return self._qvls[i]
@@ -60,8 +59,7 @@ class QVar:
         '''
         return the quantum variable that contains [self] and [other]
         '''
-        if not isinstance(other, QVar):
-            raise ValueError("Only QVar inputs are allowed.")
+        type_check(other, QVar)
         
         r = self._qvls.copy()
         for qv in other._qvls:
@@ -74,8 +72,7 @@ class QVar:
         '''
         test whether the quantum variable [self] contains [other]
         '''
-        if not isinstance(other, QVar):
-            raise ValueError("Only QVar inputs are allowed.")
+        type_check(other, QVar)
 
         for qv in other._qvls:
             if qv not in self._qvls:
