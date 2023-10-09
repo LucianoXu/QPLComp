@@ -25,12 +25,53 @@ class IQOpt(IQVal):
     def qval(self) -> QOpt:
         return self._qval
     
+    @staticmethod
+    def identity() -> IQOpt:
+        '''
+        return the identity operator with zero qubits.
+        '''
+        return IQOpt(QOpt(np.array([[1.]])), QVar([]))
+    
+    @staticmethod
+    def zero() -> IQOpt:
+        '''
+        return the zero operator with zero qubits.
+        '''
+        return IQOpt(QOpt(np.array([[0.]])), QVar([]))
+
+
     def extend(self, qvarT: QVar) -> IQOpt:
         if not qvarT.contains(self.qvar):
             raise ValueError("The extension target qvar '" + str(qvarT) + "' does not contain the original qvar '" + str(self.qvar) + "'.")
         
         dim_I = qvarT.qnum - self.qnum
         optI = QOpt.eye_opt(dim_I)
+
+        temp_opt = self.qval.tensor(optI)
+
+        # rearrange the indices
+        count_ext = 0
+        r = []
+        for i in range(qvarT.qnum):
+            if qvarT[i] in self.qvar:
+                pos = self.qvar.index(qvarT[i])
+                r.append(pos)
+            else:
+                r.append(self.qnum + count_ext)
+                count_ext += 1
+
+        opt = temp_opt.permute(r)
+        return IQOpt(opt, qvarT)
+
+    def extend_rho(self, qvarT: QVar) -> IQOpt:
+        '''
+        This special method extends this operator according to rules for partial density operators.
+        '''
+        if not qvarT.contains(self.qvar):
+            raise ValueError("The extension target qvar '" + str(qvarT) + "' does not contain the original qvar '" + str(self.qvar) + "'.")
+        
+        dim_I = qvarT.qnum - self.qnum
+        optI = QOpt.ket0_opt(dim_I)
 
         temp_opt = self.qval.tensor(optI)
 

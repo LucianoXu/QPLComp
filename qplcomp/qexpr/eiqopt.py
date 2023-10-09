@@ -248,7 +248,7 @@ class EIQOptTensor(Expr):
         return self._ioptA.eval().tensor(self._ioptB.eval())    # type: ignore
     
     def __str__(self) -> str:
-        return "(" + str(self._ioptA) + "⊗ " + str(self._ioptB) + ")"
+        return "(" + str(self._ioptA) + "⊗" + str(self._ioptB) + ")"
     
     ##################################
 

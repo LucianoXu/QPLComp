@@ -178,7 +178,26 @@ class QOpt(QVal):
         res._projector = True
 
         return res
-    
+
+    @staticmethod
+    def ket0_opt(qubitn : int) -> QOpt:
+        '''
+        Create the |00...0> QOpt of the given qubit number.
+
+        Parameters: qubitn : int, the qubit number.
+        Returns: QOpt, the ket0 QOpt.
+        '''
+        m_repr = np.zeros((2**qubitn, 2**qubitn))
+        m_repr[0][0] = 1.
+        res = QOpt(m_repr)
+
+        res._unitary = False
+        res._effect = True
+        res._pdo = True
+        res._projector = True
+
+        return res
+
     
     @staticmethod
     def zero_opt(qubitn : int) -> QOpt:

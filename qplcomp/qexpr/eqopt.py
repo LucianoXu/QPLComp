@@ -244,7 +244,7 @@ class EQOptTensor(Expr):
         return self._optA.eval().tensor(self._optB.eval())    # type: ignore
     
     def __str__(self) -> str:
-        return "(" + str(self._optA) + "⊗ " + str(self._optB) + ")"
+        return "(" + str(self._optA) + "⊗" + str(self._optB) + ")"
     
     ##################################
 

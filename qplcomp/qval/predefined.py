@@ -10,6 +10,15 @@ from typing import Dict
 # So that it can make use of symbolic expressions.
 
 optlib = {
+    "c1" : np.array(
+        [[1.]]
+    ),
+
+    "c0" : np.array(
+        [[0.]]
+    ),
+
+
     # unitary
     "I" : np.array(
         [[1., 0.],
