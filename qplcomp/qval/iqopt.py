@@ -25,6 +25,20 @@ class IQOpt(IQVal):
     def qval(self) -> QOpt:
         return self._qval
     
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, IQOpt):
+            return False
+        
+        # the common qvar
+        qvar_all = self.qvar + other.qvar
+
+        # cylinder extension
+        self_ext = self.extend(qvar_all)
+        other_ext = other.extend(qvar_all)
+        
+        
+        return self_ext.qval == other_ext.qval
+    
     @staticmethod
     def identity() -> IQOpt:
         '''

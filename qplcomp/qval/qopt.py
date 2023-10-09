@@ -110,6 +110,15 @@ class QOpt(QVal):
     
     def __str__(self) -> str:
         return str(self.m_repr)
+    
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, QOpt):
+            return False
+        
+        if self.qnum != other.qnum:
+            return False
+        
+        return linalgPP.close_equal(self.m_repr, other.m_repr, QVal.prec)
 
     @property
     def qnum(self) -> int:

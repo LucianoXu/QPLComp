@@ -60,3 +60,9 @@ class IQVal:
 
     def __str__(self) -> str:
         return str(self.qval) + str(self.qvar)
+    
+    def __eq__(self, __value: object) -> bool:
+        '''
+        Decide whether the two IQVal instances are equal.
+        '''
+        raise NotImplementedError()
