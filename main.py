@@ -12,6 +12,7 @@ def Demo(code : str) -> None:
 if __name__ == "__main__":
     pass
     Demo("(X + X) (X)")
+    print(type(Parser.Global["E'Set0"]))
     # Demo("P0")
     # Demo("P0[p] + (- P1[p])")
 

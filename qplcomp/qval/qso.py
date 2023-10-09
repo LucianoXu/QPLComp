@@ -71,10 +71,15 @@ class QSOpt(QVal):
         return self._qnum
     
     @property
+    def qo(self) -> None | bool:
+        return self._qo
+    @property
     def is_qo(self) -> bool:
         if self._qo is None:
             self._qo = linalgPP.is_qo([E.m_repr for E in self._Krausls], self.prec)
         return self._qo
+    def assert_qo(self) -> None:
+        self._qo = True
     
 
     ################################################
