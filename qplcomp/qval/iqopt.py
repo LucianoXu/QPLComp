@@ -159,7 +159,25 @@ class IQOpt(IQVal):
         other_ext = other.extend(qvar_all)
 
         return IQOpt(self_ext.qval @ other_ext.qval, qvar_all)
-    
+
+    def scale(self, c : float) -> IQOpt:
+        '''
+        Calculate and return the scaling of `c * self'.
+
+        Parameters: 
+            - `self` : `IQOpt`.
+            - `c` : `float`, the scalar.
+        Returns: `IQOpt`, the result.
+        '''
+
+        return IQOpt(self.qval * c, self.qvar)
+
+
+    def __mul__(self, other : float) -> IQOpt:
+        return self.scale(other)
+    def __rmul__(self, other : float) -> IQOpt:
+        return self.scale(other)
+
     def tensor(self, other : IQOpt) -> IQOpt:
         '''
         For indexed quantum operators `self` and `other`, return the tensor result. Note that self and other should be disjoint on their quantum variables.
@@ -239,3 +257,15 @@ class IQOpt(IQVal):
     
     def __and__(self, other : IQOpt) -> IQOpt:
         return self.conjunct(other)
+
+    def complement(self) -> IQOpt:
+        '''
+        Calculate and return the orthogonal complement of the subspace represented by `self`.
+
+        Parameters: `self` : `IQOpt`, a projector.
+        Returns: `IQOpt`, a projector, representing the complement subspace.
+        Errors: 
+            - 'ValueError' when 'self' is not a projector.
+        '''
+
+        return IQOpt(~self.qval, self.qvar)

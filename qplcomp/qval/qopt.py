@@ -305,6 +305,32 @@ class QOpt(QVal):
     def __matmul__(self, other : QOpt) -> QOpt:
         return self.mul(other)
     
+    def scale(self, c : float) -> QOpt:
+        '''
+        Calculate and return the scaling of `c * self'.
+
+        Parameters: 
+            - `self` : `QOpt`.
+            - `c` : `float`, the scalar.
+        Returns: `QOpt`, the result.
+        '''
+
+        res = QOpt(self.t_repr * c)
+
+        if 0. <= c <= 1.:
+            if self._effect == True:
+                res._effect = True
+            if self._pdo == True:
+                res._pdo = True
+
+        return res
+    
+    def __mul__(self, other : float) -> QOpt:
+        return self.scale(other)
+    def __rmul__(self, other : float) -> QOpt:
+        return self.scale(other)
+        
+    
     def tensor(self, other : QOpt) -> QOpt:
         '''
         Calculate and return the tensor product of operators self and other.
@@ -487,3 +513,21 @@ class QOpt(QVal):
 
     def __and__(self, other : QOpt) -> QOpt:
         return self.conjunct(other)
+    
+    def complement(self) -> QOpt:
+        '''
+        Calculate and return the orthogonal complement of the subspace represented by `self`.
+
+        Parameters: `self` : `QOpt`, a projector.
+        Returns: `QOpt`, a projector, representing the complement subspace.
+        Errors: 
+            - 'ValueError' when 'self' is not a projector.
+        '''
+        
+        if not self.is_projector:
+            raise ValueError("The QOpt instance is not a projector.")
+        
+        return QOpt.eye_opt(self.qnum) - self
+    
+    def __invert__(self) -> QOpt:
+        return self.complement()
