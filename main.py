@@ -10,8 +10,10 @@ def Demo(code : str) -> None:
     print()
 
 if __name__ == "__main__":
-    Demo("P1 \\vee P1")
-    Demo("P0[p] + (- P1[p])")
+    pass
+    Demo("(X + X) (X)")
+    # Demo("P0")
+    # Demo("P0[p] + (- P1[p])")
 
     # print(Pm <= Pm.disjunct(P0))
 

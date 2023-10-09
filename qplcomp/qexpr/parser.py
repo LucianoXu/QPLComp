@@ -12,8 +12,9 @@ from ..sugar import type_check
 
 from ..env import Env, Expr
 
-from ..qval import qvallib, QOpt
+from ..qval import qvallib, QOpt, QSOpt
 from .eqopt import EQOpt
+from .eqso import EQSOpt
 
 def get_default_env() -> Env:
     '''
@@ -24,6 +25,8 @@ def get_default_env() -> Env:
         val = qvallib[key]
         if isinstance(val, QOpt):
             env[key] = EQOpt(val, env)
+        elif isinstance(val, QSOpt):
+            env[key] = EQSOpt(val, env)
         else:
             raise Exception("Unexpected Exception.")
 
@@ -68,6 +71,7 @@ def p_output(p):
     output  : eiqopt
             | eqopt
     '''
+
     p[0] = p[1]
 
 from ..env import Variable
@@ -119,7 +123,7 @@ def p_eiqopt(p):
         raise Exception()
 
 
-from .eqopt import EQOpt, EQOptAdd, EQOptNeg, EQOptSub, EQOptMul, EQOptDagger, EQOptTensor, EQOptDisjunct, EQOptConjunct
+from .eqopt import EQOptAdd, EQOptNeg, EQOptSub, EQOptMul, EQOptDagger, EQOptTensor, EQOptDisjunct, EQOptConjunct, EQSOptApply
 def p_eqopt(p):
     '''
     eqopt   : variable
@@ -156,9 +160,10 @@ def p_eqopt(p):
         p[0] = EQOptDisjunct(p[1], p[3], Parser.Global)
     elif p.slice[2].type == 'CONJUNCT':
         p[0] = EQOptConjunct(p[1], p[3], Parser.Global)
+    elif len(p) == 5 and p.slice[1].type == 'eqso':
+        p[0] = EQSOptApply(p[1], p[3], Parser.Global)
     else:
         raise Exception()
-
 
 from .eqvar import EQVar
 def p_eqvar(p):

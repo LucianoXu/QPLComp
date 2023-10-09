@@ -7,6 +7,8 @@
 
 import ply.lex as lex
 
+reserved = {
+}
 
 tokens = [
     'ID',
@@ -14,7 +16,7 @@ tokens = [
     'DAGGER',
     'DISJUNCT',
     'CONJUNCT',
- ]
+ ] + list(reserved.values())
  
 literals = ['(', ')', '[', ']', '+', '-', '*']
 
@@ -24,7 +26,8 @@ t_DISJUNCT = r"∨|\\vee"
 t_CONJUNCT = r"∧|\\wedge"
 
 def t_ID(t):
-    r'[a-zA-Z_][a-zA-Z_0-9]*'
+    r'[a-zA-Z\'][a-zA-Z\'0-9]*'
+    t.type = reserved.get(t.value, 'ID')
     return t
 
 # A string containing ignored characters (spaces and tabs)

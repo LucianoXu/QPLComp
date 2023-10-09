@@ -4,7 +4,7 @@ from typing import Type
 from ..sugar import type_check
 from ..env import Expr, Env, expr_type_check
 
-from ..qval import QOpt
+from ..qval import QOpt, QSOpt
 
 
 import numpy as np
@@ -318,5 +318,42 @@ class EQOptConjunct(Expr):
     
     def __str__(self) -> str:
         return "(" + str(self._optA) + " ∧ " + str(self._optB) + ")"
+    
+    ##################################
+
+
+
+class EQSOptApply(Expr):
+    '''
+    The expression for application of superoperators on operators.
+
+    EQOptConjunct   ::= (E : QSOpt) '(' (b : QOpt) ')'
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, so : Expr, opt : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(so, Expr)
+        expr_type_check(so, QSOpt)
+        self._so = so
+
+        type_check(opt, Expr)
+        expr_type_check(opt, QOpt)
+        self._opt = opt
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return QOpt
+    
+    def eval(self) -> object:
+        return self._so.eval().apply(self._opt.eval())    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._so) + "(" + str(self._opt) + "))"
     
     ##################################

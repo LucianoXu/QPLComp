@@ -123,6 +123,22 @@ def is_Hermitian(A : np.ndarray, precision : float) -> bool:
     
     return True
 
+def is_pdo(A : np.ndarray, precision : float) -> bool:
+    '''
+    Check whether matrix `A` can be considered as a partial density operator. That is, `A` is semipositive definite and `tr(A) <= 1`.
+    '''
+
+    # check whether A is spd
+    if not is_spd(A, precision):
+        return False
+    
+    # check whether tr(A) <= 1
+    if np.trace(A) > 1 + precision:
+        return False
+    
+    return True
+
+
 def is_spd(A : np.ndarray, precision : float):
     '''
     Check whether operator A is semi-positive definite.

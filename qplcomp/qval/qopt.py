@@ -18,10 +18,11 @@ class QOpt(QVal):
     def __init__(self, data : np.ndarray,
                  is_unitary : None | bool = None,
                  is_effect : None | bool = None,
+                 is_pdo : None | bool = None,
                  is_projector : None | bool = None):
         '''
 
-        Construct a QOpt instance with given data. 
+        Construct a QOpt instance with the given data. 
         
         Parameters
             - data: np.ndarray, two options:
@@ -89,6 +90,7 @@ class QOpt(QVal):
         # if the tag is left None, then it needs to be check first.
         self._unitary : None | bool = is_unitary
         self._effect : None | bool = is_effect
+        self._pdo : None | bool = is_pdo
         self._projector : None | bool = is_projector
 
 
@@ -114,23 +116,50 @@ class QOpt(QVal):
         return self._qnum
     
     @property
+    def unitary_tag(self) -> None | bool:
+        return self._unitary
+    @property
     def is_unitary(self) -> bool:
         if self._unitary is None:
             self._unitary = linalgPP.is_unitary(self.m_repr, self.prec)
         return self._unitary
+    def assert_unitary(self) -> None:
+        self._unitary = True
     
 
+    @property
+    def effect_tag(self) -> None | bool:
+        return self._effect
     @property
     def is_effect(self) -> bool:
         if self._effect is None:
             self._effect = linalgPP.is_effect(self.m_repr, self.prec)
         return self._effect
-        
+    def assert_effect(self) -> None:
+        self._effect = True
+
+    @property
+    def pdo_tag(self) -> None | bool:
+        return self._pdo
+    @property
+    def is_pdo(self) -> bool:
+        if self._pdo is None:
+            self._pdo = linalgPP.is_pdo(self.m_repr, self.prec)
+        return self._pdo
+    def assert_pdo(self) -> None:
+        self._pdo = True
+
+    @property
+    def projector_tag(self) -> None | bool:
+        return self._projector
     @property
     def is_projector(self) -> bool:
         if self._projector is None:
             self._projector = linalgPP.is_projector(self.m_repr, self.prec)
         return self._projector
+    def assert_projector(self) -> None:
+        self._projector = True
+
     
     @staticmethod
     def eye_opt(qubitn : int) -> QOpt:
@@ -145,6 +174,26 @@ class QOpt(QVal):
 
         res._unitary = True
         res._effect = True
+        res._pdo = None
+        res._projector = True
+
+        return res
+    
+    
+    @staticmethod
+    def zero_opt(qubitn : int) -> QOpt:
+        '''
+        Create the zero QOpt of the given qubit number.
+
+        Parameters: qubitn : int, the qubit number.
+        Returns: QOpt, the zero QOpt.
+        '''
+        m_repr = np.zeros((2**qubitn, 2**qubitn))
+        res = QOpt(m_repr)
+
+        res._unitary = False
+        res._effect = True
+        res._pdo = True
         res._projector = True
 
         return res
@@ -206,6 +255,8 @@ class QOpt(QVal):
             res._unitary = True
         if self._effect == True:
             res._effect = True
+        if self._pdo == True:
+            res._pdo = True
         if self._projector == True:
             res._projector = True
 
@@ -260,6 +311,9 @@ class QOpt(QVal):
         if self._effect == True and other._effect == True:
             res._effect = True
 
+        if self._pdo == True and other._pdo == True:
+            res._pdo = True
+
         if self._projector == True and other._projector == True:
             res._projector = True
 
@@ -289,6 +343,7 @@ class QOpt(QVal):
         return QOpt(new_t_repr, 
                     is_unitary=self._unitary,
                     is_effect=self._effect,
+                    is_pdo=self._pdo,
                     is_projector=self._projector)
     
 

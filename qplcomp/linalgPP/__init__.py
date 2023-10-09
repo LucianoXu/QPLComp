@@ -11,7 +11,10 @@ from .mmethods import right_null_space
 
 from .mmethods import is_unitary
 from .mmethods import is_effect
+from .mmethods import is_pdo
 from .mmethods import is_spd
 from .mmethods import is_projector
 
 from .mmethods import Loewner_le
+
+from .somethods import is_qo

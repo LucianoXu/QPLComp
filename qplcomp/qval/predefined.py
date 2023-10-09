@@ -6,8 +6,10 @@
 import numpy as np
 from typing import Dict
 
+# TODO #3
+# So that it can make use of symbolic expressions.
 
-predefined_optlib = {
+optlib = {
     # unitary
     "I" : np.array(
         [[1., 0.],
@@ -153,6 +155,15 @@ predefined_optlib = {
 }
 
 
+soptlib = {
+    "E'P0" :
+    [optlib["P0"]],
+    "E'P1" :
+    [optlib["P1"]],
+    "E'DP":
+    [optlib["P0"], optlib["P1"]]
+}
+
 # mealib = {
 #     # measurements
 
@@ -217,7 +228,13 @@ predefined_optlib = {
 
 from .val import QVal
 from .qopt import QOpt
+from .qso import QSOpt
 
 qvallib : Dict[str, QVal]= {}
-for key in predefined_optlib:
-    qvallib[key] = QOpt(predefined_optlib[key])
+for key in optlib:
+    qvallib[key] = QOpt(optlib[key])
+
+for key in soptlib:
+    m_kraus = soptlib[key]
+    opt_kraus = [QOpt(E) for E in m_kraus]
+    qvallib[key] = QSOpt(opt_kraus)
