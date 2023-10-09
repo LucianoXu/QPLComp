@@ -20,5 +20,6 @@ from .qopt import QOpt
 from .qso import QSOpt
 
 from .iqopt import IQOpt
+from .iqso import IQSOpt
 
 from .predefined import qvallib

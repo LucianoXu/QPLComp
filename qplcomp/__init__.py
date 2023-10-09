@@ -12,5 +12,12 @@ This package aims at providing the necessary components for the implementation o
 from . import qval
 from . import qexpr
 
+from .env import Expr, Env
+
 from .qexpr import Parser
 from .qexpr import get_default_env
+
+
+from .qval import QVar
+from .qval import QOpt, IQOpt
+from .qval import QSOpt, IQSOpt
