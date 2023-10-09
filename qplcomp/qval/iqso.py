@@ -67,28 +67,6 @@ class IQSOpt(IQVal):
         other_ext = iopt.extend(qvar_all)
 
         return IQOpt(self_ext.qval.apply(other_ext.qval), qvar_all)
-
-    def apply_rho(self, rho : IQOpt) -> IQOpt:
-        '''
-        Calculate the application result of indexed superoperator `self` on the partial density operator `rho`, and return the result.
-
-        Note that the extension for partial density operators are different: we have to assume that every extra system is in |0> state.
-
-        - Parameters:
-            - `self` : `IQSOpt`, the indexed superoperator.
-            - `rho` : `IQOpt`, the partial density operator.
-        - Returns: `IQOpt`, the indexed result.
-        '''
-        type_check(rho, IQOpt)
-
-        # the common qvar
-        qvar_all = self.qvar + rho.qvar
-
-        # cylinder extension
-        self_ext = self.extend(qvar_all)
-        other_ext = rho.extend_rho(qvar_all)
-
-        return IQOpt(self_ext.qval.apply(other_ext.qval), qvar_all)
     
     def __add__(self, other : IQSOpt) -> IQSOpt:
         '''

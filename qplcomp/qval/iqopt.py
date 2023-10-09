@@ -15,11 +15,16 @@ class IQOpt(IQVal):
     Indexed quantum operators.
     '''
 
-    def __init__(self, qopt: QOpt, qvar: QVar):
+    def __init__(self, qopt: QOpt, qvar: QVar, rho_extend : bool = False):
         super().__init__(qopt, qvar)
         
         type_check(qopt, QOpt)
         self._qval : QOpt
+
+        # controls how the extension is carrried out
+        # this property will pass to its calculation results in some circumstances
+        self.rho_extend : bool = rho_extend
+
     
     @property
     def qval(self) -> QOpt:
@@ -40,18 +45,18 @@ class IQOpt(IQVal):
         return self_ext.qval == other_ext.qval
     
     @staticmethod
-    def identity() -> IQOpt:
+    def identity(is_rho : bool) -> IQOpt:
         '''
         return the identity operator with zero qubits.
         '''
-        return IQOpt(QOpt(np.array([[1.]])), QVar([]))
+        return IQOpt(QOpt(np.array([[1.]])), QVar([]), is_rho)
     
     @staticmethod
-    def zero() -> IQOpt:
+    def zero(is_rho : bool) -> IQOpt:
         '''
         return the zero operator with zero qubits.
         '''
-        return IQOpt(QOpt(np.array([[0.]])), QVar([]))
+        return IQOpt(QOpt(np.array([[0.]])), QVar([]), is_rho)
 
 
     def extend(self, qvarT: QVar) -> IQOpt:
@@ -59,35 +64,14 @@ class IQOpt(IQVal):
             raise ValueError("The extension target qvar '" + str(qvarT) + "' does not contain the original qvar '" + str(self.qvar) + "'.")
         
         dim_I = qvarT.qnum - self.qnum
-        optI = QOpt.eye_opt(dim_I)
 
-        temp_opt = self.qval.tensor(optI)
+        # different approaches of extensions
+        if self.rho_extend:
+            opt_append = QOpt.ket0_opt(dim_I)
+        else:
+            opt_append = QOpt.eye_opt(dim_I)
 
-        # rearrange the indices
-        count_ext = 0
-        r = []
-        for i in range(qvarT.qnum):
-            if qvarT[i] in self.qvar:
-                pos = self.qvar.index(qvarT[i])
-                r.append(pos)
-            else:
-                r.append(self.qnum + count_ext)
-                count_ext += 1
-
-        opt = temp_opt.permute(r)
-        return IQOpt(opt, qvarT)
-
-    def extend_rho(self, qvarT: QVar) -> IQOpt:
-        '''
-        This special method extends this operator according to rules for partial density operators.
-        '''
-        if not qvarT.contains(self.qvar):
-            raise ValueError("The extension target qvar '" + str(qvarT) + "' does not contain the original qvar '" + str(self.qvar) + "'.")
-        
-        dim_I = qvarT.qnum - self.qnum
-        optI = QOpt.ket0_opt(dim_I)
-
-        temp_opt = self.qval.tensor(optI)
+        temp_opt = self.qval.tensor(opt_append)
 
         # rearrange the indices
         count_ext = 0
@@ -101,7 +85,7 @@ class IQOpt(IQVal):
                 count_ext += 1
 
         opt = temp_opt.permute(r)
-        return IQOpt(opt, qvarT)
+        return IQOpt(opt, qvarT, self.rho_extend)
     
     def __add__(self, other : IQOpt) -> IQOpt:
         '''
@@ -121,7 +105,8 @@ class IQOpt(IQVal):
         other_ext = other.extend(qvar_all)
 
         # return the result
-        return IQOpt(self_ext.qval + other_ext.qval, qvar_all)
+        return IQOpt(self_ext.qval + other_ext.qval, qvar_all,
+                     self.rho_extend and other.rho_extend)
 
 
     def neg(self) -> IQOpt:
@@ -172,7 +157,8 @@ class IQOpt(IQVal):
         self_ext = self.extend(qvar_all)
         other_ext = other.extend(qvar_all)
 
-        return IQOpt(self_ext.qval @ other_ext.qval, qvar_all)
+        return IQOpt(self_ext.qval @ other_ext.qval, qvar_all,
+                     self.rho_extend or other.rho_extend)
 
     def scale(self, c : float) -> IQOpt:
         '''
@@ -184,7 +170,7 @@ class IQOpt(IQVal):
         Returns: `IQOpt`, the result.
         '''
 
-        return IQOpt(self.qval * c, self.qvar)
+        return IQOpt(self.qval * c, self.qvar, self.rho_extend)
 
 
     def __mul__(self, other : float) -> IQOpt:
@@ -205,7 +191,7 @@ class IQOpt(IQVal):
         
         qvar_all = self.qvar + other.qvar
 
-        return IQOpt(self.qval.tensor(other.qval), qvar_all)
+        return IQOpt(self.qval.tensor(other.qval), qvar_all, self.rho_extend)
     
     def Loewner_le(self, other : IQOpt) -> bool:
         '''
@@ -283,3 +269,6 @@ class IQOpt(IQVal):
         '''
 
         return IQOpt(~self.qval, self.qvar)
+    
+    def __invert__(self) -> IQOpt:
+        return self.complement()
