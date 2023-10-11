@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, List
 
 from ..sugar import type_check
 
@@ -68,6 +68,26 @@ class QVar:
         
         return QVar(r)
     
+    def append_ahead(self, other : QVar) -> QVar:
+        '''
+        return the quantum variable that contains [self] and [other]
+        other is guaranteed to appear in the tail
+        '''
+        return (self - other) + other
+    
+    def __sub__(self, other : QVar) -> QVar:
+        '''
+        return the quantum variable that removes variables of `other` in `self`
+        '''
+        type_check(other, QVar)
+        
+        r = []
+        for qv in self._qvls:
+            if qv not in other._qvls:
+                r.append(qv)
+        
+        return QVar(r)
+    
     def contains(self, other : QVar) -> bool:
         '''
         Test whether the quantum variable `self` contains `other`.
@@ -95,3 +115,17 @@ class QVar:
                 return False
             
         return True
+    
+    def to(self, other : QVar) -> List[int]:
+        '''
+        return the positions of variables of `other` in `self`
+        '''
+        if not self.contains(other):
+            raise ValueError("QVar `self` should contain QVar `other`.")
+        
+        r = []
+        for i in range(other.qnum):
+            pos = self._qvls.index(other[i])
+            r.append(pos)
+
+        return r

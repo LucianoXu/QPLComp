@@ -272,3 +272,47 @@ class IQOpt(IQVal):
     
     def __invert__(self) -> IQOpt:
         return self.complement()
+    
+
+    def space_sub(self, other : IQOpt) -> IQOpt:
+        '''
+        For indexed quantum operators projectors `self` and `other`, return the subtraction of the subspaces.
+
+        Note: it is equivalent to `self & (~ other)`.
+        
+        - Parameters: `self`, `other` : `IQOpt`.
+        - Returns: `IQOpt`.
+        - Error: `ValueError` when `self` or `other` is not a projector.
+        
+        '''
+
+        return self & (~ other)
+
+    def support(self) -> IQOpt:
+        '''
+        Return the support of `self`.
+        Parameters: `self` : `IQOpt`, should be Hermitian (not checked here).
+        Returns: `IQOpt`, a projector.
+        '''
+        return IQOpt(self.qval.support(), self.qvar)
+
+    
+    def trace(self, qvar : QVar) -> IQOpt:
+        '''
+        Trace out the given qvar.
+        '''
+        idx = self.qvar.to(qvar)
+        return IQOpt(self.qval.trace(idx), self.qvar - qvar)
+
+
+
+    def initwlp(self, qvar : QVar) -> IQOpt:
+        P0 = QOpt(np.array([[1., 0.], [0., 0.]]), None, True, True, True)
+
+        temp = self
+        for q in qvar:
+            IP0 = IQOpt(P0, QVar([q]))
+            temp = temp.conjunct(IP0).trace(QVar([q])).support()
+
+        return temp
+

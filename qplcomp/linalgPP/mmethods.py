@@ -5,9 +5,54 @@ from .general import close_zero, close_equal
 
 from .vmethods import v_normalized, v_complex_dot
 
+def column_simplest(A : np.ndarray, precision : float) -> np.ndarray:
+    '''
+    Reduce the matrix `A` to the column-simplest form, with pivots being `1`, using only column operations.
+    Extra zero columns are thrown away.
+    Matrix `A` need not to be square.
+    '''
+    res = np.array([]).reshape((len(A), 0))
+
+    for i in range(A.shape[0]):
+
+        # find the pivot
+        pivot_norm = 0.
+        pivot_j = -1
+        for j in range(A.shape[1]):
+            if np.abs(A[i][j]) > pivot_norm + precision:
+                pivot_norm = np.abs(A[i][j])
+                pivot_j = j
+
+        if pivot_j != -1:
+
+            # set pivot to 1
+            pivot_col = A[:, [pivot_j]] / A[i, pivot_j]
+            A = np.hstack((A[:, :pivot_j], A[:, pivot_j+1:]))
+            res = np.hstack((res, pivot_col))
+
+            # subtraction on other columns
+            for j in range(A.shape[1]):
+                A[:,[j]] -= A[i][j] * pivot_col
+
+    # reduse res to simplest form
+
+    for j in range(1, res.shape[1]):
+        pivot_i = 0
+        while(res[pivot_i, j] < precision):
+            pivot_i += 1
+        
+        for _j in range(j):
+            res[:, [_j]] -= res[pivot_i, _j] * res[:, [j]]
+
+    return res
+                
+
+
 def column_space(A : np.ndarray, precision : float) -> np.ndarray:
     '''
     Calculate a set of orthonormal basis of the column space of A.
+    This is also the right non-zero space of A, because the right zero space is orthogonal to the column space.
+
     It is implemented by Schmidt decomposition.
 
     Note: the linear dependent vectors are ruled out (with given precision).
@@ -82,6 +127,24 @@ def right_null_space(A : np.ndarray, precision : float) -> np.ndarray:
             break
 
     return V[rank:].transpose().conj()
+
+def support(A : np.ndarray, precision: float) -> np.ndarray:
+    '''
+    Calculate the support of A.
+    Parameters: 
+        - `self` : `np.ndarray`, matrix, should be Hermitian.
+        - `precision` : `float`.
+    Returns: `np.ndarray`, a projector matrix.
+    '''
+
+    eigval, eigvec = np.linalg.eigh(A)
+
+    res = np.zeros_like(A)
+    for i in range(len(eigval)):
+        if np.abs(eigval[i]) > precision:
+            res += eigvec[:, [i]] @ eigvec[:, [i]].conj().transpose()
+
+    return res    
 
 
 #######################################################################

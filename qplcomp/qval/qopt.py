@@ -540,3 +540,58 @@ class QOpt(QVal):
     
     def __invert__(self) -> QOpt:
         return self.complement()
+    
+    def space_sub(self, other : QOpt) -> QOpt:
+        '''
+        Calculate and return the subtraction of subspaces represented by projectors self and other.
+
+        Parameters: self, other : QOpt, projectors with the same number of qubits.
+        Returns: QOpt, a projector, representing the subspace of subtraction.
+        Errors: 
+            - ValueError when self and other differ in their qubit numbers.
+            - ValueError when self or other is not a projector.
+
+        ================================================================
+        Note: the subtraction of self and other is defined by:
+
+        { v \\in self: \\forall u \\in other, v \\bot u },
+
+        which is proved to be equivalent to `self & (~ other)`.
+
+        '''
+        return self & (~ other)
+    
+    def support(self) -> QOpt:
+        '''
+        Return the support of `self`.
+        Parameters: `self` : `QOpt`, should be Hermitian (not checked here).
+        Returns: `QOpt`, a projector.
+        '''
+        return QOpt(linalgPP.support(self.m_repr, QVal.prec),
+                   is_unitary=None,
+                   is_effect=True,
+                   is_pdo=None,
+                   is_projector=True)
+
+
+
+
+    
+    def trace(self, qls : Sequence[int]) -> QOpt:
+        '''
+        Trace out the qubits indicated in `qls`.
+        '''
+
+        sorted_qls = sorted(qls, reverse=True)
+
+        temp = self.t_repr
+
+        for i in sorted_qls:
+            temp = temp.trace(axis1=i, axis2=i + len(temp.shape)//2)
+
+        res = QOpt(temp)
+
+        if self._pdo == True:
+            res._pdo = True
+
+        return res

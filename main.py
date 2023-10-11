@@ -1,6 +1,8 @@
 from qplcomp import *
 import numpy as np
 
+from qplcomp import linalgPP
+
 def Demo(code : str) -> None:
     A = Parser.parse(code)
     print("Input String: "+ code)
@@ -10,11 +12,7 @@ def Demo(code : str) -> None:
     print()
 
 if __name__ == "__main__":
-    pass
-    Demo("(X + X) (X)")
-    print(type(Parser.Global["E'Set0"]))
-    # Demo("P0")
-    # Demo("P0[p] + (- P1[p])")
-
-    # print(Pm <= Pm.disjunct(P0))
-
+    
+    Pm = Parser.parse("Pm[q]\\otimes Pp[p]").eval()
+    Pm : IQOpt
+    print(Pm.initwlp(QVar(["q"])))

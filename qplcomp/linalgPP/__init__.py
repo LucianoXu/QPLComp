@@ -7,9 +7,11 @@ This package is the plus version of `np.linalg`. It contains more algorithms of 
 '''
 from .mmethods import close_equal
 
+from .mmethods import column_simplest
 from .mmethods import row_space
 from .mmethods import column_space
 from .mmethods import right_null_space
+from .mmethods import support
 
 from .mmethods import is_unitary
 from .mmethods import is_effect
