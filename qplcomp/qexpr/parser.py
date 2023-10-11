@@ -60,6 +60,8 @@ class Parser:
 
 precedence = (
     ('left', '+', '-'),
+    ('right', 'SASAKI_IMPLY'),
+    ('left', 'SASAKI_CONJUNCT'),
     ('left', 'DISJUNCT'),
     ('left', 'CONJUNCT'),
     ('left', '*', 'OTIMES'),
