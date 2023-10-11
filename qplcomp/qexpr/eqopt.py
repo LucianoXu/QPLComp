@@ -321,6 +321,77 @@ class EQOptConjunct(Expr):
     
     ##################################
 
+class EQOptSasakiImply(Expr):
+    '''
+    The expression for Sasaki implication of projective quantum operators.
+
+    EQOptSasakiImply   ::= (a : QOpt) '\\SasakiImply' (b : QOpt)
+                        | (a : QOpt) '⇝' (b : QOpt)
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, optA : Expr, optB : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(optA, Expr)
+        expr_type_check(optA, QOpt)
+        self._optA = optA
+
+        type_check(optB, Expr)
+        expr_type_check(optB, QOpt)
+        self._optB = optB
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return QOpt
+    
+    def eval(self) -> object:
+        return self._optA.eval().Sasaki_imply(self._optB.eval())    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._optA) + " ⇝ " + str(self._optB) + ")"
+    
+    ##################################
+
+class EQOptSasakiConjunct(Expr):
+    '''
+    The expression for Sasaki conjunction of projective quantum operators.
+
+    EQOptSasakiConjunct ::= (a : QOpt) '\\SasakiConjunct' (b : QOpt)
+                        | (a : QOpt) '⋒' (b : QOpt)
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, optA : Expr, optB : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(optA, Expr)
+        expr_type_check(optA, QOpt)
+        self._optA = optA
+
+        type_check(optB, Expr)
+        expr_type_check(optB, QOpt)
+        self._optB = optB
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return QOpt
+    
+    def eval(self) -> object:
+        return self._optA.eval().Sasaki_conjunct(self._optB.eval())    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._optA) + " ⋒ " + str(self._optB) + ")"
+    
+    ##################################
 
 
 class EQSOptApply(Expr):

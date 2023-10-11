@@ -16,6 +16,8 @@ tokens = [
     'DAGGER',
     'DISJUNCT',
     'CONJUNCT',
+    'SASAKI_IMPLY',
+    'SASAKI_CONJUNCT',
  ] + list(reserved.values())
  
 literals = ['(', ')', '[', ']', '+', '-', '*']
@@ -24,6 +26,8 @@ t_OTIMES = r"⊗|\\otimes"
 t_DAGGER = r"†|\^\\dagger"
 t_DISJUNCT = r"∨|\\vee"
 t_CONJUNCT = r"∧|\\wedge"
+t_SASAKI_IMPLY = r"⇝|\\SasakiImply"
+t_SASAKI_CONJUNCT = r"⋒|\\SasakiConjunct"
 
 def t_ID(t):
     r'[a-zA-Z\'][a-zA-Z\'0-9]*'

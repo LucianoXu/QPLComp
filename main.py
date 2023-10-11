@@ -13,6 +13,6 @@ def Demo(code : str) -> None:
 
 if __name__ == "__main__":
     
-    Pm = Parser.parse("Pm[q]\\otimes Pp[p]").eval()
-    Pm : IQOpt
-    print(Pm.initwlp(QVar(["q"])))
+    Pm = Parser.parse("Pm[q] \\SasakiImply P0[p]")
+    print(Pm)
+    print(Pm.eval())

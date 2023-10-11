@@ -595,3 +595,25 @@ class QOpt(QVal):
             res._pdo = True
 
         return res
+
+    def Sasaki_imply(self, other : QOpt) -> QOpt:
+        '''
+        Calculate and return the Sasaki implication of subspaces represented by projectors `self` and `other`.
+
+        Parameters: `self`, `other` : QOpt, projectors with the same number of qubits.
+        Returns: QOpt, a projector, representing the subspace of Sasaki implication.
+        
+        Note: Sasaki implication P -> R := P^\\bot \vee (P \\wedge R)
+        '''
+        return (~ self) | (self & other)
+    
+    def Sasaki_conjunc(self, other : QOpt) -> QOpt:
+        '''
+        Calculate and return the Sasaki conjunction of subspaces represented by projectors `self` and `other`.
+
+        Parameters: `self`, `other` : QOpt, projectors with the same number of qubits.
+        Returns: QOpt, a projector, representing the subspace of Sasaki conjunction.
+        
+        Note: Sasaki conjunction P -> R := P \\wedge (P^\\bot \\vee R)
+        '''
+        return self & ((~ self) | other)

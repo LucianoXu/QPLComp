@@ -82,7 +82,7 @@ def p_variable(p):
     p[0] = Variable(p[1], Parser.Global)
 
 
-from .eiqopt import EIQOpt, EIQOptAdd, EIQOptNeg, EIQOptSub, EIQOptMul, EIQOptDagger, EIQOptTensor, EIQOptDisjunct, EIQOptConjunct
+from .eiqopt import *
 def p_eiqopt(p):
     '''
     eiqopt  : eqopt eqvar
@@ -96,6 +96,8 @@ def p_eiqopt(p):
             | eiqopt OTIMES eiqopt
             | eiqopt DISJUNCT eiqopt
             | eiqopt CONJUNCT eiqopt
+            | eiqopt SASAKI_IMPLY eiqopt
+            | eiqopt SASAKI_CONJUNCT eiqopt
     '''
     if len(p) == 3 and p.slice[1].type == 'eqopt' and p.slice[2].type == 'eqvar':
         p[0] = EIQOpt(p[1], p[2], Parser.Global)
@@ -119,11 +121,15 @@ def p_eiqopt(p):
         p[0] = EIQOptDisjunct(p[1], p[3], Parser.Global)
     elif p.slice[2].type == 'CONJUNCT':
         p[0] = EIQOptConjunct(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'SASAKI_IMPLY':
+        p[0] = EIQOptSasakiImply(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'SASAKI_CONJUNCT':
+        p[0] = EIQOptSasakiConjunct(p[1], p[3], Parser.Global)
     else:
         raise Exception()
 
 
-from .eqopt import EQOptAdd, EQOptNeg, EQOptSub, EQOptMul, EQOptDagger, EQOptTensor, EQOptDisjunct, EQOptConjunct, EQSOptApply
+from .eqopt import *
 def p_eqopt(p):
     '''
     eqopt   : variable
@@ -137,6 +143,8 @@ def p_eqopt(p):
             | eqopt OTIMES eqopt
             | eqopt DISJUNCT eqopt
             | eqopt CONJUNCT eqopt
+            | eqopt SASAKI_IMPLY eqopt
+            | eqopt SASAKI_CONJUNCT eqopt
     '''
     if len(p) == 2:
         p[0] = p[1]
@@ -160,8 +168,12 @@ def p_eqopt(p):
         p[0] = EQOptDisjunct(p[1], p[3], Parser.Global)
     elif p.slice[2].type == 'CONJUNCT':
         p[0] = EQOptConjunct(p[1], p[3], Parser.Global)
-    elif len(p) == 5 and p.slice[1].type == 'eqso':
-        p[0] = EQSOptApply(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'SASAKI_IMPLY':
+        p[0] = EQOptSasakiImply(p[1], p[3], Parser.Global)
+    elif p.slice[2].type == 'SASAKI_CONJUNCT':
+        p[0] = EQOptSasakiConjunct(p[1], p[3], Parser.Global)
+    # elif len(p) == 5 and p.slice[1].type == 'eqso':
+    #     p[0] = EQSOptApply(p[1], p[3], Parser.Global)
     else:
         raise Exception()
 

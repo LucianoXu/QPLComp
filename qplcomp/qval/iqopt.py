@@ -306,6 +306,34 @@ class IQOpt(IQVal):
 
 
 
+    def Sasaki_imply(self, other : IQOpt) -> IQOpt:
+        '''
+        Calculate and return the Sasaki implication of subspaces represented by projectors `self` and `other`.
+
+        Parameters: `self`, `other` : IQOpt, projectors with the same number of qubits.
+        Returns: IQOpt, a projector, representing the subspace of Sasaki implication.
+        
+        Note: Sasaki implication P -> R := P^\\bot \vee (P \\wedge R)
+        '''
+        return (~ self) | (self & other)
+    
+    
+    def Sasaki_conjunc(self, other : IQOpt) -> IQOpt:
+        '''
+        Calculate and return the Sasaki conjunction of subspaces represented by projectors `self` and `other`.
+
+        Parameters: `self`, `other` : QOpt, projectors with the same number of qubits.
+        Returns: QOpt, a projector, representing the subspace of Sasaki conjunction.
+        
+        Note: Sasaki conjunction P -> R := P \\wedge (P^\\bot \\vee R)
+        '''
+        return self & ((~ self) | other)
+
+
+    ############################################################################
+    # special methods
+    ############################################################################
+
     def initwlp(self, qvar : QVar) -> IQOpt:
         P0 = QOpt(np.array([[1., 0.], [0., 0.]]), None, True, True, True)
 

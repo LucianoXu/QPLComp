@@ -325,3 +325,76 @@ class EIQOptConjunct(Expr):
         return "(" + str(self._ioptA) + " ∧ " + str(self._ioptB) + ")"
     
     ##################################
+
+
+class EIQOptSasakiImply(Expr):
+    '''
+    The expression for Sasaki implication of projective quantum operators.
+
+    EIQOptSasakiImply   ::= (a : IQOpt) '\\SasakiImply' (b : IQOpt)
+                        | (a : IQOpt) '⇝' (b : IQOpt)
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, ioptA : Expr, ioptB : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(ioptA, Expr)
+        expr_type_check(ioptA, IQOpt)
+        self._ioptA = ioptA
+
+        type_check(ioptB, Expr)
+        expr_type_check(ioptB, IQOpt)
+        self._ioptB = ioptB
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return IQOpt
+    
+    def eval(self) -> object:
+        return self._ioptA.eval().Sasaki_imply(self._ioptB.eval())    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._ioptA) + " ⇝ " + str(self._ioptB) + ")"
+    
+    ##################################
+
+class EIQOptSasakiConjunct(Expr):
+    '''
+    The expression for Sasaki conjunction of projective quantum operators.
+
+    EIQOptSasakiConjunct ::= (a : IQOpt) '\\SasakiConjunct' (b : IQOpt)
+                        | (a : IQOpt) '⋒' (b : IQOpt)
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, ioptA : Expr, ioptB : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(ioptA, Expr)
+        expr_type_check(ioptA, QOpt)
+        self._ioptA = ioptA
+
+        type_check(ioptB, Expr)
+        expr_type_check(ioptB, QOpt)
+        self._ioptB = ioptB
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return IQOpt
+    
+    def eval(self) -> object:
+        return self._ioptA.eval().Sasaki_conjunct(self._ioptB.eval())    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._ioptA) + " ⋒ " + str(self._ioptB) + ")"
+    
+    ##################################
