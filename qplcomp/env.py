@@ -148,6 +148,11 @@ class Env:
     def __setitem__(self, key : str, expr : Expr) -> None:
         if not isinstance(expr, Expr):
             raise ValueError("Invalid value. Only quantum values are allowed.")
+        
+        # it's not allowed to change the value.
+        if key in self._lib:
+            raise ValueError("The variable '" + str(key) + "' has been defined.")
+
         self._lib[key] = expr
 
     def __getitem__(self, key : str) -> Expr:

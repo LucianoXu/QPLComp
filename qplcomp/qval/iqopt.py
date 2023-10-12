@@ -318,7 +318,7 @@ class IQOpt(IQVal):
         return (~ self) | (self & other)
     
     
-    def Sasaki_conjunc(self, other : IQOpt) -> IQOpt:
+    def Sasaki_conjunct(self, other : IQOpt) -> IQOpt:
         '''
         Calculate and return the Sasaki conjunction of subspaces represented by projectors `self` and `other`.
 

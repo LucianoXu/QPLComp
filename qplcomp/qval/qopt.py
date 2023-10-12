@@ -607,7 +607,7 @@ class QOpt(QVal):
         '''
         return (~ self) | (self & other)
     
-    def Sasaki_conjunc(self, other : QOpt) -> QOpt:
+    def Sasaki_conjunct(self, other : QOpt) -> QOpt:
         '''
         Calculate and return the Sasaki conjunction of subspaces represented by projectors `self` and `other`.
 

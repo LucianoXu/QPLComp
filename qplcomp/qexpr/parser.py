@@ -71,7 +71,6 @@ precedence = (
 def p_output(p):
     '''
     output  : eiqopt
-            | eqopt
     '''
 
     p[0] = p[1]
@@ -87,7 +86,8 @@ def p_variable(p):
 from .eiqopt import *
 def p_eiqopt(p):
     '''
-    eiqopt  : eqopt eqvar
+    eiqopt  : IQOPT variable
+            | eqopt eqvar
             | '(' eiqopt ')'
             | '(' '-' eiqopt ')'
             | eiqopt '+' eiqopt
@@ -101,7 +101,11 @@ def p_eiqopt(p):
             | eiqopt SASAKI_IMPLY eiqopt
             | eiqopt SASAKI_CONJUNCT eiqopt
     '''
-    if len(p) == 3 and p.slice[1].type == 'eqopt' and p.slice[2].type == 'eqvar':
+    if p[1] == 'IQOPT':
+        p[0] = p[2]
+    elif len(p) == 2 and p.slice[1].type == 'variable':
+        p[0] = p[1]
+    elif len(p) == 3 and p.slice[1].type == 'eqopt' and p.slice[2].type == 'eqvar':
         p[0] = EIQOpt(p[1], p[2], Parser.Global)
     elif len(p) == 4 and p[1] == '(' and p[3] == ')':
         p[0] = p[2]

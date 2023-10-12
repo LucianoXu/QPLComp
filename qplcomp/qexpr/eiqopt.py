@@ -377,11 +377,11 @@ class EIQOptSasakiConjunct(Expr):
         super().__init__(env)
 
         type_check(ioptA, Expr)
-        expr_type_check(ioptA, QOpt)
+        expr_type_check(ioptA, IQOpt)
         self._ioptA = ioptA
 
         type_check(ioptB, Expr)
-        expr_type_check(ioptB, QOpt)
+        expr_type_check(ioptB, IQOpt)
         self._ioptB = ioptB
 
     ##################################

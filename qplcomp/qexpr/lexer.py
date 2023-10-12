@@ -8,6 +8,7 @@
 import ply.lex as lex
 
 reserved = {
+    'IQOPT' : 'IQOPT',
 }
 
 tokens = [
