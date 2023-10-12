@@ -25,5 +25,5 @@ from .qval import QSOpt, IQSOpt
 # qexpr outputs the parsing details for downstream applications
 # the lexer and parser is constructed by ply
 
-from .qexpr import lexer
-from .qexpr import parser
+from .qexpr import lexer_def
+from .qexpr import parser_def
