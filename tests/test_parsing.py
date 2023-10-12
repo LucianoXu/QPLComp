@@ -59,3 +59,13 @@ def test_06():
         pass
     else:
         raise Exception()
+    
+def test_complement():
+    Demo("P0^\\bot[p]")
+    Demo("Pm[p]^⊥")
+
+
+def test_scale():
+    Demo("3*P0[p]")
+    Demo("j*Pm[q]\\otimes P0[p]")
+    Demo("(1e+4-1.03j)*Pm[p]")

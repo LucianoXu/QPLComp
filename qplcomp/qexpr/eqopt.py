@@ -178,6 +178,42 @@ class EQOptMul(Expr):
     
     ##################################
 
+
+class EQOptScale(Expr):
+    '''
+    The expression for scaling of quantum operators.
+
+    EQOptScale ::= (c : complex) (b : QOpt)
+                | (c : complex) '*' (b : QOpt)
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, c : complex, opt : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(c, (complex, float))
+        self._c = c
+
+        type_check(opt, Expr)
+        expr_type_check(opt, QOpt)
+        self._opt = opt
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return QOpt
+    
+    def eval(self) -> object:
+        return self._c * self._opt.eval() # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._c) + " " + str(self._opt) + ")"
+    
+    ##################################
+
 class EQOptDagger(Expr):
     '''
     The expression for the conjugate transpose of a quantum operator.
@@ -320,6 +356,40 @@ class EQOptConjunct(Expr):
         return "(" + str(self._optA) + " ∧ " + str(self._optB) + ")"
     
     ##################################
+
+class EQOptComplement(Expr):
+    '''
+    The expression for complement of projective quantum operators.
+
+    EQOptComplement ::= (a : QOpt) '^\\bot'
+                    | (a : QOpt) '^⊥'
+    
+    Nonterminal.
+    '''
+
+    def __init__(self, opt : Expr, env : Env):
+        super().__init__(env)
+
+        type_check(opt, Expr)
+        expr_type_check(opt, QOpt)
+        self._opt = opt
+
+
+    ##################################
+    # Expression settings
+
+    @property
+    def T(self) -> Type:
+        return QOpt
+    
+    def eval(self) -> object:
+        return (~ self._opt.eval())    # type: ignore
+    
+    def __str__(self) -> str:
+        return "(" + str(self._opt) + "^⊥)"
+    
+    ##################################
+
 
 class EQOptSasakiImply(Expr):
     '''

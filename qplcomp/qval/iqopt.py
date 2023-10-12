@@ -160,7 +160,7 @@ class IQOpt(IQVal):
         return IQOpt(self_ext.qval @ other_ext.qval, qvar_all,
                      self.rho_extend or other.rho_extend)
 
-    def scale(self, c : float) -> IQOpt:
+    def scale(self, c : complex | float) -> IQOpt:
         '''
         Calculate and return the scaling of `c * self'.
 
@@ -173,9 +173,9 @@ class IQOpt(IQVal):
         return IQOpt(self.qval * c, self.qvar, self.rho_extend)
 
 
-    def __mul__(self, other : float) -> IQOpt:
+    def __mul__(self, other : complex | float) -> IQOpt:
         return self.scale(other)
-    def __rmul__(self, other : float) -> IQOpt:
+    def __rmul__(self, other : complex | float) -> IQOpt:
         return self.scale(other)
 
     def tensor(self, other : IQOpt) -> IQOpt:

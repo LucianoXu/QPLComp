@@ -314,7 +314,7 @@ class QOpt(QVal):
     def __matmul__(self, other : QOpt) -> QOpt:
         return self.mul(other)
     
-    def scale(self, c : float) -> QOpt:
+    def scale(self, c : complex | float) -> QOpt:
         '''
         Calculate and return the scaling of `c * self'.
 
@@ -326,7 +326,7 @@ class QOpt(QVal):
 
         res = QOpt(self.t_repr * c)
 
-        if 0. <= c <= 1.:
+        if abs(c.imag) < QVal.prec and 0. <= c.real <= 1.:
             if self._effect == True:
                 res._effect = True
             if self._pdo == True:
@@ -334,9 +334,9 @@ class QOpt(QVal):
 
         return res
     
-    def __mul__(self, other : float) -> QOpt:
+    def __mul__(self, other : complex | float) -> QOpt:
         return self.scale(other)
-    def __rmul__(self, other : float) -> QOpt:
+    def __rmul__(self, other : complex | float) -> QOpt:
         return self.scale(other)
         
     
