@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Type, List
+from typing import Dict, Type, List, Tuple
 
 from .error import *
 from ..metaproof import MetaProof
@@ -34,6 +34,12 @@ class Term:
         '''
         raise NotImplementedError()
     
+    def all_var(self) -> set[Var]:
+        '''
+        Return all the variables of the term `self` as a set.
+        '''
+        raise NotImplementedError()
+    
     def free_var(self) -> set[Var]:
         '''
         Return the free variables of the term `self` as a set.
@@ -58,6 +64,9 @@ class Sort(Term):
     def alpha_convertible(self, other: Term) -> bool:
         return self == other
         
+    def all_var(self) -> set[Var]:
+        return set()
+
     def free_var(self) -> set[Var]:
         return set()
 
@@ -97,7 +106,7 @@ class Type_i(Sort):
         return self.i == other.i
     
     def __str__(self) -> str:
-        return "Type({})".format(self.i)
+        return f"Type({self.i})"
 
 
 ############################
@@ -128,6 +137,9 @@ class Var(Term):
     def __str__(self) -> str:
         return self.name
     
+    def all_var(self) -> set[Var]:
+        return {self}
+
     def free_var(self) -> set[Var]:
         return {self}
         
@@ -139,14 +151,18 @@ class Var(Term):
         
     count = 0
     @staticmethod
-    def fresh_var(var_set : set[Var]) -> Var:
+    def fresh_var(terms : Tuple[Term, ...]) -> Var:
         '''
-        This staticmethod returns a fresh variable not in `var_set` based on `count`.
+        This staticmethod returns a fresh variable not in any of `terms`, based on `count`.
         '''
-        name = "#{}".format(Var.count)
+        var_set = set()
+        for term in terms:
+            var_set.update(term.all_var())
+
+        name = f"#{Var.count}"
         while Var(name) in var_set:
             Var.count += 1
-            name = "#{}".format(Var.count)
+            name = f"#{Var.count}"
 
         return Var(name)
     
@@ -175,6 +191,9 @@ class Const(Term):
     def __str__(self) -> str:
         return self.name
     
+    def all_var(self) -> set[Var]:
+        return set()
+
     def free_var(self) -> set[Var]:
         return set()
         
@@ -223,13 +242,16 @@ class Prod(BoundTerm):
     def __eq__(self, other: Term) -> bool:
         if not isinstance(other, Prod):
             return False
+        if self is other:
+            return True
+        
         return self.x == other.x and self.T == other.T and self.U == other.U
     
     def alpha_convertible(self, other: Term) -> bool:
         if not isinstance(other, Prod):
             return False
         
-        fresh_var = Var.fresh_var(self.free_var() | other.free_var())
+        fresh_var = Var.fresh_var((self, other))
         self_rep = self.replace_bound(fresh_var)
         other_rep = other.replace_bound(fresh_var)
         
@@ -239,12 +261,15 @@ class Prod(BoundTerm):
 
         if self.x in self.U.free_var() or self.x in self.U.free_var():
 
-            return "forall {}:{}, {}".format(self.x, self.T, self.U)
+            return f"forall {self.x}:{self.T}, {self.U}"
         
         else:
 
-            return "({} -> {})".format(self.T, self.U)
-        
+            return f"({self.T} -> {self.U})"
+
+    def all_var(self) -> set[Var]:
+        return self.T.all_var() | self.U.all_var() | {self.x}
+    
     def free_var(self) -> set[Var]:
         return (self.T.free_var() | self.U.free_var()) - {self.x}
     
@@ -267,7 +292,7 @@ class Prod(BoundTerm):
     def replace_bound(self, var : Var) -> Prod:
         # security check. necessary?
         # if var in self.free_var():
-        #     raise CIC_SYS_Error("Invalid bound replacement: variable '{}' is free in '{}'.".format(var, self))
+        #     raise CIC_SYS_Error(f"Invalid bound replacement: variable '{var}' is free in '{self}'.")
         
         return Prod(var, self.T.substitute(self.x, var), self.U.substitute(self.x, var))
         
@@ -291,6 +316,8 @@ class Abstract(BoundTerm):
     def __eq__(self, other: Term) -> bool:
         if not isinstance(other, Abstract):
             return False
+        if self is other:
+            return True
         
         return self.x == other.x and self.T == other.T and self.u == other.u
 
@@ -298,14 +325,17 @@ class Abstract(BoundTerm):
         if not isinstance(other, Abstract):
             return False
         
-        fresh_var = Var.fresh_var(self.free_var() | other.free_var())
+        fresh_var = Var.fresh_var((self, other))
         self_rep = self.replace_bound(fresh_var)
         other_rep = other.replace_bound(fresh_var)
         
         return self_rep.T.alpha_convertible(other_rep.T) and self_rep.u.alpha_convertible(other_rep.u)
 
     def __str__(self) -> str:
-        return "fun({}:{})=>{}".format(self.x, self.T, self.u)
+        return f"fun({self.x}:{self.T})=>{self.u}"
+    
+    def all_var(self) -> set[Var]:
+        return self.T.all_var() | self.u.all_var() | {self.x}
 
     def free_var(self) -> set[Var]:
         return (self.T.free_var() | self.u.free_var()) - {self.x}
@@ -346,6 +376,8 @@ class Apply(Term):
     def __eq__(self, other: Term) -> bool:
         if not isinstance(other, Apply):
             return False
+        if self is other:
+            return True
         
         return self.t == other.t and self.u == other.u
     
@@ -355,8 +387,11 @@ class Apply(Term):
         return self.t.alpha_convertible(other.t) and self.u.alpha_convertible(other.u)
 
     def __str__(self) -> str:
-        return "({} {})".format(self.t, self.u)
+        return f"({self.t} {self.u})"
     
+    def all_var(self) -> set[Var]:
+        return self.t.all_var() | self.u.all_var()
+
     def free_var(self) -> set[Var]:
         return self.t.free_var() | self.u.free_var()
     
@@ -390,6 +425,8 @@ class Let_in(BoundTerm):
     def __eq__(self, other: Term) -> bool:
         if not isinstance(other, Let_in):
             return False
+        if self is other:
+            return True
         
         return self.x == other.x and self.t == other.t and self.T == other.T and self.u == other.u
 
@@ -397,15 +434,18 @@ class Let_in(BoundTerm):
         if not isinstance(other, Let_in):
             return False
         
-        fresh_var = Var.fresh_var(self.free_var() | other.free_var())
+        fresh_var = Var.fresh_var((self, other))
         self_rep = self.replace_bound(fresh_var)
         other_rep = other.replace_bound(fresh_var)
 
         return self_rep.t.alpha_convertible(other_rep.t) and self_rep.T.alpha_convertible(other_rep.T) and self.u.alpha_convertible(other_rep.u)
 
     def __str__(self) -> str:
-        return "let {}:={}:{} in {}".format(self.x, self.t, self.T, self.u)
+        return f"let {self.x}:={self.t}:{self.T} in {self.u}"
     
+    def all_var(self) -> set[Var]:
+        return self.t.all_var() | self.T.all_var() | self.u.all_var() | {self.x}
+
     def free_var(self) -> set[Var]:
         return (self.t.free_var() | self.T.free_var() | self.u.free_var()) - {self.x}
     
@@ -438,7 +478,7 @@ class MP_IsSort(MetaProof):
         self.__s = s
 
         if not isinstance(s, Sort):
-            raise CIC_SYS_Error("The term '{}' is not a sort.".format(self.__s))
+            raise CIC_SYS_Error(f"The term '{self.__s}' is not a sort.")
         
     @property
     def s(self) -> Term:
@@ -448,5 +488,5 @@ class MP_IsSort(MetaProof):
         return ""
     
     def conclusion(self) -> str:
-        return "{} ∈ S".format(self.s)
+        return f"{self.s} ∈ S"
 

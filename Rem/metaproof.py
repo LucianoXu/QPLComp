@@ -22,7 +22,7 @@ class MetaProof:
         res += "\n"
 
         # line
-        res += "({}) ".format(self.rule_name) + "-"*40 + "\n" 
+        res += f"({self.rule_name}) " + "-"*40 + "\n" 
 
         # indent conclusion
         res += " " * space_len + self.conclusion() 

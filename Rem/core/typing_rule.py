@@ -7,7 +7,8 @@ See (https://coq.inria.fr/refman/language/cic.html#global-environment).
 
 from __future__ import annotations
 
-from .env import *
+from .context import *
+from .environment import *
 
 
 ################################################################
@@ -32,7 +33,7 @@ class MP_WF(MetaProof):
         return self.__Gamma
 
     def conclusion(self) -> str:
-        return "WF({}){}".format(self.E, self.Gamma)
+        return f"WF({self.E}){self.Gamma}"
     
 class MP_WT(MetaProof):
     '''
@@ -65,7 +66,7 @@ class MP_WT(MetaProof):
         return self.__T
     
     def conclusion(self) -> str:
-        return "{}{} ⊢ {} : {}".format(self.E, self.Gamma, self.t, self.T)
+        return f"{self.E}{self.Gamma} ⊢ {self.t} : {self.T}"
 
 
 ###############################################################
@@ -191,7 +192,7 @@ class MP_W_Global_Assum(MP_WF):
     '''
     rule_name = "W-Global-Assum"
 
-    def __init__(self, wt : MP_WT, s_sort : MP_IsSort, c_notin_E : MP_Env_Not_Contain_Var):
+    def __init__(self, wt : MP_WT, s_sort : MP_IsSort, c_notin_E : MP_Env_Not_Contain_Const):
 
         # proof of `E[] ⊢ T : s`
         CIC_SYS_type_check(wt, MP_WT)
@@ -200,7 +201,7 @@ class MP_W_Global_Assum(MP_WF):
         CIC_SYS_type_check(s_sort, MP_IsSort)
 
         # proof of `c ∉ E`
-        CIC_SYS_type_check(c_notin_E, MP_Env_Not_Contain_Var)
+        CIC_SYS_type_check(c_notin_E, MP_Env_Not_Contain_Const)
 
         # empty Gamma
         if not wt.Gamma.is_empty:
@@ -243,13 +244,13 @@ class MP_W_Global_Def(MP_WF):
     '''
     rule_name = "W-Global-Def"
 
-    def __init__(self, wt : MP_WT, c_notin_E : MP_Env_Not_Contain_Var):
+    def __init__(self, wt : MP_WT, c_notin_E : MP_Env_Not_Contain_Const):
 
         # proof of `E[] ⊢ t : T`
         CIC_SYS_type_check(wt, MP_WT)
 
         # proof of `c ∉ E`
-        CIC_SYS_type_check(c_notin_E, MP_Env_Not_Contain_Var)
+        CIC_SYS_type_check(c_notin_E, MP_Env_Not_Contain_Const)
 
         # empty Gamma
         if not wt.Gamma.is_empty:
@@ -638,7 +639,7 @@ class MP_Prod_Set(MP_WT):
 
     def premises(self) -> str:
         res = self.__wt_outer.conclusion() + "\n"
-        res += "{} ∈ \n {{SProp, Prop, Set}}".format(self.__s_sort.s)
+        res += f"{self.__s_sort.s} ∈ {{SProp, Prop, Set}}"
         res += self.__wt_inner.conclusion() + "\n"
         return res
     
@@ -704,7 +705,7 @@ class MP_Prod_Type(MP_WT):
 
     def premises(self) -> str:
         res = self.__wt_outer.conclusion() + "\n"
-        res += "{} ∈ \n {{SProp, Type(i)}}".format(self.__s_sort.s)
+        res += f"{self.__s_sort.s} ∈ {{SProp, Type(i)}}"
         res += self.__wt_inner.conclusion() + "\n"
         return res
     
