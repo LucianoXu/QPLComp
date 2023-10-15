@@ -24,10 +24,3 @@ def CIC_SYS_type_check(obj : object, target_type : Type | Tuple[Type, ...]) -> N
 
     elif not isinstance(obj, target_type):
         raise CIC_SYS_Error("The parameter expression '" + str(obj) + "' should be of type '" + str(target_type) + "', but is of type '"+ str(type(obj)) + "'.")
-
-class CICError(Exception):
-    '''
-    This error corresponds to the invalid operation from the user in the CIC system.
-    '''
-    pass
-

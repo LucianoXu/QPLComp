@@ -7,8 +7,6 @@ See (https://coq.inria.fr/refman/language/cic.html#global-environment).
 
 from __future__ import annotations
 
-from type_checker.env import Context, Environment
-
 from .env import *
 
 
@@ -130,7 +128,7 @@ class MP_W_Local_Assum(MP_WF):
 
         # the conclusion `WF(E)[Γ::(x:T)]`
         new_Gamma = x_notin_Gamma.Gamma.push(
-            Typing(x_notin_Gamma.var, wt.t)
+            LocalTyping(x_notin_Gamma.var, wt.t)
         )
         super().__init__(wt.E, new_Gamma)
     
@@ -170,7 +168,7 @@ class MP_W_Local_Def(MP_WF):
 
         # the conclusion `WF(E)[Γ::(x:=t:T)]`
         new_Gamma = x_notin_Gamma.Gamma.push(
-            Definition(x_notin_Gamma.var, wt.t, wt.T)
+            LocalDef(x_notin_Gamma.var, wt.t, wt.T)
         )
         super().__init__(wt.E, new_Gamma)
 
@@ -222,7 +220,7 @@ class MP_W_Global_Assum(MP_WF):
 
         # the conclusion `WF(E; c:T)`
         new_E = wt.E.push(
-            Typing(c_notin_E.var, wt.T)
+            GlobalTyping(c_notin_E.const, wt.T)
         )
         super().__init__(new_E, Context())
 
@@ -266,7 +264,7 @@ class MP_W_Global_Def(MP_WF):
 
         # the conclusion `WF(E; c:=t:T)`
         new_E = wt.E.push(
-            Definition(c_notin_E.var, wt.t, wt.T)
+            GlobalDef(c_notin_E.const, wt.t, wt.T)
         )
         super().__init__(new_E, Context())
 
@@ -446,7 +444,7 @@ class MP_Const(MP_WT):
         self.__c_dec_in_E = c_dec_in_E
 
         # the conclusion `E[Γ] ⊢ c:T`
-        super().__init__(wf.E, wf.Gamma, c_dec_in_E.var_typing.x, c_dec_in_E.var_typing.T)
+        super().__init__(wf.E, wf.Gamma, c_dec_in_E.const_typing.c, c_dec_in_E.const_typing.T)
 
 
     def premises(self) -> str:
@@ -845,7 +843,7 @@ class MP_Let(MP_WT):
         
         # break `Γ::(x:=t:T)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
-        if not isinstance(dec, Definition):
+        if not isinstance(dec, LocalDef):
             raise CIC_SYS_Error("Invalid context.")
 
         # consistent `E`

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from .term import *
-from .metaproof import MetaProof
+from ..metaproof import MetaProof
 
-class Declaration:
-    pass
+class LocalDec:
 
-    def __eq__(self, other : Declaration) -> bool:
+    def __eq__(self, other : LocalDec) -> bool:
         '''
         This is the syntactical equivalence.
         '''
@@ -26,21 +25,18 @@ class Declaration:
     def T(self) -> Term:
         return self.__T
 
-class VarDeclaration(Declaration):
-    '''
-    The declaration of a variable x
-    '''
+
+class LocalTyping(LocalDec):
+    def __eq__(self, other: LocalDec) -> bool:
+        if not isinstance(other, LocalTyping):
+            return False
+        return self.x == other.x and self.T == other.T
     
     def __str__(self) -> str:
         return "({} : {})".format(self.x, self.T)
 
-class Typing(VarDeclaration):
-    def __eq__(self, other: Declaration) -> bool:
-        if not isinstance(other, Typing):
-            return False
-        return self.x == other.x and self.T == other.T
 
-class Definition(VarDeclaration):
+class LocalDef(LocalDec):
     def __init__(self, x : Var, t : Term, T : Term):
         super().__init__(x, T)
         CIC_SYS_type_check(t, Term)
@@ -50,25 +46,26 @@ class Definition(VarDeclaration):
     def t(self) -> Term:
         return self.__t
     
+    def __eq__(self, other: LocalDec) -> bool:
+        if not isinstance(other, LocalDef):
+            return False
+        return self.x == other.x and self.t == other.t and self.T == other.T
+    
     def __str__(self) -> str:
         return "({} := {} : {})".format(self.x, self.t, self.T)
     
-    def __eq__(self, other: Declaration) -> bool:
-        if not isinstance(other, Definition):
-            return False
-        return self.x == other.x and self.t == other.t and self.T == other.T
 
 ##############################################################
 # Local Context
 ###
 
 class Context:
-    def __init__(self, ls : Tuple[VarDeclaration, ...] = ()):
+    def __init__(self, ls : Tuple[LocalDec, ...] = ()):
         CIC_SYS_type_check(ls, tuple)
         self.__ls = ls
 
     @property
-    def ls(self) -> Tuple[VarDeclaration, ...]:
+    def ls(self) -> Tuple[LocalDec, ...]:
         return self.__ls
     
     def __eq__(self, other : Context):
@@ -96,13 +93,13 @@ class Context:
             res += "]"
             return res
         
-    def push(self, dec : VarDeclaration) -> Context:
+    def push(self, dec : LocalDec) -> Context:
         '''
         Corresponds to `Γ::(...)`
         '''
         return Context(self.__ls + (dec,))
     
-    def pop(self) -> Tuple[Context, VarDeclaration]:
+    def pop(self) -> Tuple[Context, LocalDec]:
         if self.is_empty:
             raise CIC_SYS_Error("Cannot pop empty context.")
         return Context(self.__ls[:-1]), self.__ls[-1]
@@ -184,17 +181,17 @@ class MP_Cont_Contain_Typing(MetaProof):
     '''
     The proof object for `(x : T) ∈ Γ`.
     '''
-    def __init__(self, var_typing : Typing, Gamma : Context):
-        CIC_SYS_type_check(var_typing, Typing)
+    def __init__(self, var_typing : LocalTyping, Gamma : Context):
+        CIC_SYS_type_check(var_typing, LocalTyping)
         CIC_SYS_type_check(Gamma, Context)
 
         contains = False
         for var_dec in Gamma.ls:
-            if isinstance(var_dec, Typing):
+            if isinstance(var_dec, LocalTyping):
                 if var_dec == var_typing:
                     contains = True
                     break
-            elif isinstance(var_dec, Definition):
+            elif isinstance(var_dec, LocalDef):
                 if var_dec.x == var_typing.x and var_dec.T == var_typing.T:
                     contains = True
                     break
@@ -208,7 +205,7 @@ class MP_Cont_Contain_Typing(MetaProof):
         self.__Gamma = Gamma
 
     @property
-    def var_typing(self) -> Typing:
+    def var_typing(self) -> LocalTyping:
         return self.__var_typing
     
     @property
@@ -226,8 +223,8 @@ class MP_Cont_Contain_Def(MetaProof):
     '''
     The proof object for `(x := t : T) ∈ Γ`.
     '''
-    def __init__(self, var_def : Definition, Gamma : Context):
-        CIC_SYS_type_check(var_def, Definition)
+    def __init__(self, var_def : LocalDef, Gamma : Context):
+        CIC_SYS_type_check(var_def, LocalDef)
         CIC_SYS_type_check(Gamma, Context)
 
         if var_def not in Gamma.ls:
@@ -237,7 +234,7 @@ class MP_Cont_Contain_Def(MetaProof):
         self.__Gamma = Gamma
 
     @property
-    def var_def(self) -> Definition:
+    def var_def(self) -> LocalDef:
         return self.__var_def
     
     @property
@@ -255,14 +252,63 @@ class MP_Cont_Contain_Def(MetaProof):
 ##############################################################
 # Global Environment
 ###
+class GlobalDec:
+    def __eq__(self, other : GlobalDec) -> bool:
+        '''
+        This is the syntactical equivalence.
+        '''
+        raise NotImplementedError()
+    
+    def __init__(self, c : Const, T : Term):
+        CIC_SYS_type_check(c, Const)
+        self.__c = c
+        CIC_SYS_type_check(T, Term)
+        self.__T = T
 
+    @property
+    def c(self) -> Const:
+        return self.__c
+    
+    @property
+    def T(self) -> Term:
+        return self.__T
+
+
+class GlobalTyping(GlobalDec):
+    def __eq__(self, other: GlobalDec) -> bool:
+        if not isinstance(other, GlobalTyping):
+            return False
+        return self.c == other.c and self.T == other.T
+    
+    def __str__(self) -> str:
+        return "({} : {})".format(self.c, self.T)
+
+
+class GlobalDef(GlobalDec):
+    def __init__(self, c : Const, t : Term, T : Term):
+        super().__init__(c, T)
+        CIC_SYS_type_check(t, Term)
+        self.__t = t
+
+    @property
+    def t(self) -> Term:
+        return self.__t
+    
+    def __eq__(self, other: GlobalDec) -> bool:
+        if not isinstance(other, GlobalDef):
+            return False
+        return self.c == other.c and self.t == other.t and self.T == other.T
+    
+    def __str__(self) -> str:
+        return "({} := {} : {})".format(self.c, self.t, self.T)
+    
 class Environment:
-    def __init__(self, ls : Tuple[Declaration, ...] = ()):
+    def __init__(self, ls : Tuple[GlobalDec, ...] = ()):
         CIC_SYS_type_check(ls, tuple)
         self.__ls = ls
 
     @property
-    def ls(self) -> Tuple[Declaration, ...]:
+    def ls(self) -> Tuple[GlobalDec, ...]:
         return self.__ls
     
     def __eq__(self, other : Environment):
@@ -287,7 +333,7 @@ class Environment:
             res += "]"
             return res
         
-    def push(self, dec : Declaration) -> Environment:
+    def push(self, dec : GlobalDec) -> Environment:
         '''
         Corresponds to `E; (...)`
         '''
@@ -296,22 +342,22 @@ class Environment:
 
 class MP_Env_Not_Contain_Var(MetaProof):
     '''
-    The proof object for `x ∉ E`.
+    The proof object for `c ∉ E`.
     '''
-    def __init__(self, var : Var, E : Environment):
-        CIC_SYS_type_check(var, Var)
+    def __init__(self, const : Const, E : Environment):
+        CIC_SYS_type_check(const, Const)
         CIC_SYS_type_check(E, Environment)
 
-        for var_dec in E.ls:
-            if var_dec.x == var:
-                raise CIC_SYS_Error("The variable '{}' is contained in the environment.".format(var))
+        for const_dec in E.ls:
+            if const_dec.c == const:
+                raise CIC_SYS_Error("The constant '{}' is contained in the environment.".format(const))
         
-        self.__var = var
+        self.__const = const
         self.__E = E
 
     @property
-    def var(self) -> Var:
-        return self.__var
+    def const(self) -> Const:
+        return self.__const
     
     @property
     def E(self) -> Environment:
@@ -321,31 +367,31 @@ class MP_Env_Not_Contain_Var(MetaProof):
         return ""
 
     def conclusion(self) -> str:
-        return "{} ∉ {}".format(self.var, self.E)
+        return "{} ∉ {}".format(self.const, self.E)
 
 class MP_Env_Contain_Var(MetaProof):
     '''
-    The proof object for `x ∈ E`.
+    The proof object for `c ∈ E`.
     '''
-    def __init__(self, var : Var, E : Environment):
-        CIC_SYS_type_check(var, Var)
+    def __init__(self, const : Const, E : Environment):
+        CIC_SYS_type_check(const, Const)
         CIC_SYS_type_check(E, Environment)
 
         contains = False
-        for var_dec in E.ls:
-            if var_dec.x == var:
+        for const_dec in E.ls:
+            if const_dec.c == const:
                 contains = True
                 break
 
         if not contains:
-            raise CIC_SYS_Error("The variable '{}' is not contained in the environment.".format(var))
+            raise CIC_SYS_Error("The constant '{}' is not contained in the environment.".format(const))
         
-        self.__var = var
+        self.__const = const
         self.__E = E
 
     @property
-    def var(self) -> Var:
-        return self.__var
+    def const(self) -> Const:
+        return self.__const
     
     @property
     def E(self) -> Environment:
@@ -355,39 +401,39 @@ class MP_Env_Contain_Var(MetaProof):
         return ""
 
     def conclusion(self) -> str:
-        return "{} ∈ {}".format(self.var, self.E)
+        return "{} ∈ {}".format(self.const, self.E)
 
 
 class MP_Env_Contain_Typing(MetaProof):
     '''
-    The proof object for `(x : T) ∈ E`.
+    The proof object for `(c : T) ∈ E`.
     '''
-    def __init__(self, var_typing : Typing, E : Environment):
-        CIC_SYS_type_check(var_typing, Typing)
+    def __init__(self, const_typing : GlobalTyping, E : Environment):
+        CIC_SYS_type_check(const_typing, GlobalTyping)
         CIC_SYS_type_check(E, Environment)
 
         contains = False
-        for var_dec in E.ls:
-            if isinstance(var_dec, Typing):
-                if var_dec == var_typing:
+        for const_dec in E.ls:
+            if isinstance(const_dec, GlobalTyping):
+                if const_dec == const_typing:
                     contains = True
                     break
-            elif isinstance(var_dec, Definition):
-                if var_dec.x == var_typing.x and var_dec.T == var_typing.T:
+            elif isinstance(const_dec, GlobalDef):
+                if const_dec.c == const_typing.c and const_dec.T == const_typing.T:
                     contains = True
                     break
             else:
                 raise Exception()
                 
         if not contains:
-            raise CIC_SYS_Error("The declaration '{}' is not contained in the environment.".format(var_typing))
+            raise CIC_SYS_Error("The declaration '{}' is not contained in the environment.".format(const_typing))
         
-        self.__var_typing = var_typing
+        self.__const_typing = const_typing
         self.__E = E
 
     @property
-    def var_typing(self) -> Typing:
-        return self.__var_typing
+    def const_typing(self) -> GlobalTyping:
+        return self.__const_typing
     
     @property
     def E(self) -> Environment:
@@ -397,4 +443,4 @@ class MP_Env_Contain_Typing(MetaProof):
         return ""
 
     def conclusion(self) -> str:
-        return "{} ∈ {}".format(self.var_typing, self.E)
+        return "{} ∈ {}".format(self.const_typing, self.E)
