@@ -1,19 +1,14 @@
 from qplcomp import *
 import numpy as np
 
-from qplcomp import linalgPP
-
-def Demo(code : str) -> None:
-    A = Parser.parse(code)
-    print("Input String: "+ code)
-    print("Parsing Result: " + str(A))
-    print("Value: ")
-    print(A.eval())
-    print()
-
+from env import *
 if __name__ == "__main__":
     pass
-    Demo("(1e+4-1.03j)*Pm[p]")
+    ec = ECPointer.Empty(3)
+    ec = ec.W_Global_Assum("x", Var("Type"))
+    ec = ec.W_Global_Assum("y", Var("x"))
+    ec = ec.W_Global_Assum("z", Var("y"))
+    ec.envp.print_dec()
     # Demo("X")
     # Demo("CX")
     # Demo("P0 \\vee Pm")
