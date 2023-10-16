@@ -1,8 +1,7 @@
 
 from __future__ import annotations
-from types import ModuleType
-from typing import Type, Tuple, Any
 
+from typing import Type, Tuple, Any, TypeVar
 
 import inspect
 import os
@@ -32,7 +31,31 @@ class __META_SYS_INFO__:
     counter = 0
     registered : list[str] = []
 
-def meta_term(cls) -> Any:
+
+
+class MetaTerm:
+    '''
+    meta-term
+    ```
+    _
+    ```
+
+    The meta term for objects in the calculus itself.
+    All objects are by default abstract and cannot be instantiated.
+    Use `@concrete_term` decorator to transform a class to concrete one.
+    '''
+    meta_term_name : str
+    meta_term_def : str
+    term_order : int
+
+    def __new__(cls, *args, **kwargs):
+        raise Meta_Sys_Error(f"Cannot instantiate abstract proof object {cls}.")
+
+    def is_concrete(self) -> bool:
+        return False
+    
+T = TypeVar('T', bound = MetaTerm)
+def meta_term(cls : Type[T]) -> Type[T]:
     '''
     Parse meta term information from the docstring of `MetaTerm` subclasses.
     The docstring should be of form:
@@ -55,7 +78,7 @@ def meta_term(cls) -> Any:
         if doc is None:
             raise ValueError()
         pos1 = doc.index("```")
-        cls.meta_term_name = doc[:pos1].replace("\n","")
+        cls.meta_term_name = doc[:pos1].replace("\n","").replace("\t","").replace(" ","")
 
         doc = doc[pos1 + len("```"):]
         pos2 = doc.index("```")
@@ -66,30 +89,7 @@ def meta_term(cls) -> Any:
 
     return cls
 
-
-@meta_term
-class MetaTerm:
-    '''
-    meta-term
-    ```
-    _
-    ```
-
-    The meta term for objects in the calculus itself.
-    All objects are by default abstract and cannot be instantiated.
-    Use `@concrete_term` decorator to transform a class to concrete one.
-    '''
-    meta_term_name : str
-    meta_term_def : str
-    term_order : int
-
-    def __new__(cls, *args, **kwargs):
-        raise Meta_Sys_Error(f"Cannot instantiate abstract proof object {cls}.")
-
-    def is_concrete(self) -> bool:
-        return False
-    
-def concrete_term(cls):
+def concrete_term(cls : Type[T]) -> Type[T]:
     '''
     Decorator for concrete meta terms: reload the definition for `__new__` in the class definition by:
     ```Python
@@ -108,6 +108,9 @@ def concrete_term(cls):
     cls.is_concrete = lambda self: True
     
     return cls
+
+# decorate the root term
+MetaTerm = meta_term(MetaTerm)
 
 @meta_term
 class MetaProof(MetaTerm):

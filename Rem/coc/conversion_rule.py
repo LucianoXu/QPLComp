@@ -487,4 +487,264 @@ class MP_subtyping(MetaProof):
     def conclusion(self) -> str:
         return f"{self.E}{self.Gamma} ⊢ {self.t1} ≤βδιζη {self.t2}"
 
+@meta_term
+class MP_subtyping_trans(MP_subtyping):
+    '''
+    subtype-trans
+    ```
+        E[Γ] ⊢ t1 ≤βδιζη t2
+        E[Γ] ⊢ t2 ≤βδιζη t3
+        -------------------
+        E[Γ] ⊢ t1 ≤βδιζη t3
+    ```
+    '''
+    def __init__(self, subtype1 : MP_subtyping, subtype2 : MP_subtyping):
+
+        # proof of `E[Γ] ⊢ t1 ≤βδιζη t2`
+        Meta_Sys_type_check(subtype1, MP_subtyping)
+
+        # proof of `E[Γ] ⊢ t2 ≤βδιζη t3`
+        Meta_Sys_type_check(subtype2, MP_subtyping)
+
+        # consistent 'E'
+        if not subtype1.E == subtype2.E:
+            raise Meta_Sys_Error("Inconsistent environment.")
+        
+        # consistent 'Γ'
+        if not subtype1.Gamma == subtype2.Gamma:
+            raise Meta_Sys_Error("Inconsistent context.")
+        
+        # consistent 't2'
+        if not subtype1.t2 == subtype2.t1:
+            raise Meta_Sys_Error("Inconsistent 't2'.")
+        
+        self.__subtype1 = subtype1
+        self.__subtype2 = subtype2
+
+        # the conclusion `E[Γ] ⊢ t1 ≤βδιζη t3`
+        super().__init__(subtype1.E, subtype1.Gamma, subtype1.t1, subtype2.t2)
+
+    def premises(self) -> str:
+        res = self.__subtype1.conclusion() + "\n"
+        res = self.__subtype2.conclusion() + "\n"
+        return res
+
+
+@concrete_term
+class MP_subtyping_convert(MP_subtyping):
+    '''
+    subtype-convert
+    ```
+        E[Γ] ⊢ t1 =βδιζη t2
+        ---------------------
+        E[Γ] ⊢ t1 ≤βδιζη t2
+    ```
+    '''
+    def __init__(self, convert : MP_convertible):
+
+        # proof of `E[Γ] ⊢ t1 =βδιζη t2`
+        Meta_Sys_type_check(convert, MP_convertible)
+        
+        self.__convert = convert
+
+        # the conclusion `E[Γ] ⊢ t1 ≤βδιζη t2`
+        super().__init__(convert.E, convert.Gamma, convert.t1, convert.t2)
+
+    def premises(self) -> str:
+        return self.__convert.conclusion() + "\n"
+    
+    
+@concrete_term
+class MP_subtyping_universe(MP_subtyping):
+    '''
+    subtype-universe
+    ```
+        i ≤ j
+        -----------------------------
+        E[Γ] ⊢ Type(i) ≤βδιζη Type(j)
+    ```
+    '''
+    def __init__(self, E : Environment, Gamma : Context, i : int, j : int):
+
+        # proof of `i ≤ j`
+        Meta_Sys_type_check(i, int)
+        Meta_Sys_type_check(j, int)
+        if not 0 < i <= j:
+            raise Meta_Sys_Error(f"The universe number condition 0 < i <= j is not satisfied for i = {i} and j = {j}.")
+        
+        # consitent 'E'
+        Meta_Sys_type_check(E, Environment)
+
+        # consistent 'Gamma'
+        Meta_Sys_type_check(Gamma, Context)
+        
+        self.__i = i
+        self.__j = j
+
+        # the conclusion `E[Γ] ⊢ Type(i) ≤βδιζη Type(j)`
+        super().__init__(E, Gamma, Type_i(i), Type_i(j))
+
+    def premises(self) -> str:
+        return f"{self.__i} ≤ {self.__j}"
+        
+
+@concrete_term
+class MP_subtyping_Set(MP_subtyping):
+    '''
+    subtype-Set
+    ```
+        --------------------------
+        E[Γ] ⊢ Set ≤βδιζη Type(i)
+    ```
+    '''
+    def __init__(self, E : Environment, Gamma : Context, i : int):
+
+        # proof check
+        Meta_Sys_type_check(E, Environment)
+        Meta_Sys_type_check(Gamma, Context)
+        Meta_Sys_type_check(i, int)
+        if not 0 < i:
+            raise Meta_Sys_Error(f"Invalid universe number: {i}.")
+        
+        self.__i = i
+
+        # the conclusion `E[Γ] ⊢ Set ≤βδιζη Type(i)`
+        super().__init__(E, Gamma, Set(), Type_i())
+
+    def premises(self) -> str:
+        return ""
+    
+
+@concrete_term
+class MP_subtyping_Prop(MP_subtyping):
+    '''
+    subtype-Prop
+    ```
+        -------------------------
+        E[Γ] ⊢ Prop ≤βδιζη Set
+    ```
+    '''
+    def __init__(self, E : Environment, Gamma : Context):
+
+        # type check 'E'
+        Meta_Sys_type_check(E, Environment)
+
+        # type check 'Γ'
+        Meta_Sys_type_check(Gamma, Context)
+
+        # the conclusion `E[Γ] ⊢ Prop ≤βδιζη Set`
+        super().__init__(E, Gamma, Prop(), Set())
+
+    def premises(self) -> str:
+        return ""
+    
+@concrete_term
+class MP_subtyping_lam(MP_subtyping):
+    '''
+    subtype-lam
+    ```
+        E[Γ] ⊢ T =βδιζη U
+        E[Γ::(x:T)] ⊢ T' ≤βδιζη U'
+        --------------------------------
+        E[Γ] ⊢ ∀x:T, T' ≤βδιζη ∀x:U, U'
+    ```
+    '''
+    def __init__(self, convert : MP_convertible, subtype : MP_subtyping):
+
+        # proof of `E[Γ] ⊢ T =βδιζη U`
+        Meta_Sys_type_check(convert, MP_convertible)
+
+        # proof of `E[Γ::(x:T)] ⊢ T' ≤βδιζη U'`
+        Meta_Sys_type_check(subtype, MP_subtyping)
+
+        # consistent 'E'
+        if not convert.E == subtype.E:
+            raise Meta_Sys_Error("Inconsistent environment.")
+
+        # break `Γ::(x:T)`
+        Gamma_pre, dec = subtype.Gamma.pop()
+
+        # consistent 'Γ'
+        if not convert.Gamma == Gamma_pre:
+            raise Meta_Sys_Error("Inconsistent context.")
+        
+        # consistent 'T'
+        if not convert.t1 == dec.T:
+            raise Meta_Sys_Error("Inconsistent 'T'.")
+        
+        self.__convert = convert
+        self.__subtype = subtype
+
+        # the conclusion `E[Γ] ⊢ ∀x:T, T' ≤βδιζη ∀x:U, U'`
+        t1 = Prod(dec.x, convert.t1, subtype.t1)
+        t2 = Prod(dec.x, convert.t2, subtype.t2)
+        super().__init__(convert.E, convert.Gamma, t1, t2)
+
+    def premises(self) -> str:
+        res = self.__convert.conclusion() + "\n"
+        res += self.__subtype.conclusion() + "\n"
+        return res
+    
+# for CIC: there is still a subtyping rule for inductive types
+
+
+
+
+
+##########################################
+# the Convertible proof (with subtyping) #
+##########################################
+
+@concrete_term
+class MP_Conv(MP_WT):
+    '''
+    Conv
+    ```
+        E[Γ] ⊢ U : s
+        E[Γ] ⊢ t : T
+        E[Γ] ⊢ T ≤βδιζη U
+        ------------------
+        E[Γ] ⊢ t : U
+    ```
+    '''
+    def __init__(self, wt_U : MP_WT, wt_t : MP_WT, subtype : MP_subtyping):
+
+        # proof of `E[Γ] ⊢ U : s`
+        Meta_Sys_type_check(wt_U, MP_WT)
+
+        # proof of `E[Γ] ⊢ t : T`
+        Meta_Sys_type_check(wt_t, MP_WT)
+
+        # proof of `E[Γ] ⊢ T ≤βδιζη U`
+        Meta_Sys_type_check(subtype, MP_subtyping)
+
+        # consistent 'E'
+        if wt_U.E != wt_t.E or wt_U.E != subtype.E:
+            raise Meta_Sys_Error("Inconsistent environment.")
+        
+        # consistent 'Γ'
+        if wt_U.Gamma != wt_t.Gamma or wt_U.Gamma != subtype.Gamma:
+            raise Meta_Sys_Error("Inconsistent context.")
+        
+        # consistent 'U'
+        if wt_U.t != subtype.t2:
+            raise Meta_Sys_Error("Inconsistent 'U'.")
+        
+        # consistent 'T'
+        if wt_t.T != subtype.t1:
+            raise Meta_Sys_Error("Inconsistent 'T'.")
+        
+        self.__wt_U = wt_U
+        self.__wt_t = wt_t
+        self.__subtype = subtype
+
+        # the conclusion 'E[Γ] ⊢ t : U'
+        super().__init__(wt_U.E, wt_U.Gamma, wt_t.t, wt_U.t)
+
+    def premises(self) -> str:
+        res = self.__wt_U.conclusion() + "\n"
+        res += self.__wt_t.conclusion() + "\n"
+        res += self.__subtype.conclusion() + "\n"
+        return res
+
 
