@@ -7,9 +7,16 @@ See (https://coq.inria.fr/refman/language/cic.html#global-environment).
 from __future__ import annotations
 
 from .term import *
-from ..metaproof import MetaProof
+from ..metadef import MetaProof
 
-class LocalDec:
+@meta_term
+class LocalDec(MetaTerm):
+    '''
+    local-dec
+    ```
+    _
+    ```
+    '''
 
     def __eq__(self, other : LocalDec) -> bool:
         '''
@@ -18,9 +25,9 @@ class LocalDec:
         raise NotImplementedError()
     
     def __init__(self, x : Var, T : Term):
-        CIC_SYS_type_check(x, Var)
+        Meta_Sys_type_check(x, Var)
         self.__x = x
-        CIC_SYS_type_check(T, Term)
+        Meta_Sys_type_check(T, Term)
         self.__T = T
 
     @property
@@ -31,8 +38,15 @@ class LocalDec:
     def T(self) -> Term:
         return self.__T
 
-
+@concrete_term
 class LocalTyping(LocalDec):
+    '''
+    local-assum
+    ```
+    x : T
+    ```
+    '''
+
     def __eq__(self, other: LocalDec) -> bool:
         if not isinstance(other, LocalTyping):
             return False
@@ -41,11 +55,18 @@ class LocalTyping(LocalDec):
     def __str__(self) -> str:
         return f"({self.x} : {self.T})"
 
-
+@concrete_term
 class LocalDef(LocalDec):
+    '''
+    local-def
+    ```
+    x := t : T
+    ```
+    '''
+
     def __init__(self, x : Var, t : Term, T : Term):
         super().__init__(x, T)
-        CIC_SYS_type_check(t, Term)
+        Meta_Sys_type_check(t, Term)
         self.__t = t
 
     @property
@@ -65,9 +86,17 @@ class LocalDef(LocalDec):
 # Local Context
 ###
 
-class Context:
+@concrete_term
+class Context(MetaTerm):
+    '''
+    context
+    ```
+    _
+    ```
+    '''
+
     def __init__(self, ls : Tuple[LocalDec, ...] = ()):
-        CIC_SYS_type_check(ls, tuple)
+        Meta_Sys_type_check(ls, tuple)
         self.__ls = ls
 
     @property
@@ -107,7 +136,7 @@ class Context:
     
     def pop(self) -> Tuple[Context, LocalDec]:
         if self.is_empty:
-            raise CIC_SYS_Error("Cannot pop empty context.")
+            raise Meta_Sys_Error("Cannot pop empty context.")
         return Context(self.__ls[:-1]), self.__ls[-1]
     
 
@@ -118,17 +147,23 @@ class Context:
         return Context(self.__ls + other.__ls)
         
 
+@concrete_term
 class MP_Cont_Not_Contain_Var(MetaProof):
     '''
+    no-in-local
+    ```
+    x ∉ Γ
+    ```
     The proof object for `x ∉ Γ`.
     '''
+
     def __init__(self, var : Var, Gamma : Context):
-        CIC_SYS_type_check(var, Var)
-        CIC_SYS_type_check(Gamma, Context)
+        Meta_Sys_type_check(var, Var)
+        Meta_Sys_type_check(Gamma, Context)
 
         for var_dec in Gamma.ls:
             if var_dec.x == var:
-                raise CIC_SYS_Error(f"The variable '{var}' is contained in the context.")
+                raise Meta_Sys_Error(f"The variable '{var}' is contained in the context.")
         
         self.__var = var
         self.__Gamma = Gamma
@@ -148,13 +183,19 @@ class MP_Cont_Not_Contain_Var(MetaProof):
         return f"{self.var} ∉ {self.Gamma}"
 
 
+@concrete_term
 class MP_Cont_Contain_Var(MetaProof):
     '''
+    var-in-local
+    ```
+    x ∈ Γ
+    ```
     The proof object for `x ∈ Γ`.
     '''
+
     def __init__(self, var : Var, Gamma : Context):
-        CIC_SYS_type_check(var, Var)
-        CIC_SYS_type_check(Gamma, Context)
+        Meta_Sys_type_check(var, Var)
+        Meta_Sys_type_check(Gamma, Context)
 
         contains = False
         for var_dec in Gamma.ls:
@@ -163,7 +204,7 @@ class MP_Cont_Contain_Var(MetaProof):
                 break
 
         if not contains:
-            raise CIC_SYS_Error(f"The variable '{var}' is not contained in the context.")
+            raise Meta_Sys_Error(f"The variable '{var}' is not contained in the context.")
         
         self.__var = var
         self.__Gamma = Gamma
@@ -183,13 +224,19 @@ class MP_Cont_Contain_Var(MetaProof):
         return f"{self.var} ∈ {self.Gamma}"
 
 
+@concrete_term
 class MP_Cont_Contain_Typing(MetaProof):
     '''
+    assum-in-local
+    ```
+    (x : T) ∈ Γ
+    ```
     The proof object for `(x : T) ∈ Γ`.
     '''
+
     def __init__(self, var_typing : LocalTyping, Gamma : Context):
-        CIC_SYS_type_check(var_typing, LocalTyping)
-        CIC_SYS_type_check(Gamma, Context)
+        Meta_Sys_type_check(var_typing, LocalTyping)
+        Meta_Sys_type_check(Gamma, Context)
 
         contains = False
         for var_dec in Gamma.ls:
@@ -205,7 +252,7 @@ class MP_Cont_Contain_Typing(MetaProof):
                 raise Exception()
                 
         if not contains:
-            raise CIC_SYS_Error(f"The typing '{var_typing}' is not contained in the context.")
+            raise Meta_Sys_Error(f"The typing '{var_typing}' is not contained in the context.")
         
         self.__var_typing = var_typing
         self.__Gamma = Gamma
@@ -224,17 +271,22 @@ class MP_Cont_Contain_Typing(MetaProof):
     def conclusion(self) -> str:
         return f"{self.var_typing} ∈ {self.Gamma}"
 
-
+@concrete_term
 class MP_Cont_Contain_Def(MetaProof):
     '''
+    def-in-local
+    ```
+    (x := t : T) ∈ Γ
+    ```
     The proof object for `(x := t : T) ∈ Γ`.
     '''
+    
     def __init__(self, var_def : LocalDef, Gamma : Context):
-        CIC_SYS_type_check(var_def, LocalDef)
-        CIC_SYS_type_check(Gamma, Context)
+        Meta_Sys_type_check(var_def, LocalDef)
+        Meta_Sys_type_check(Gamma, Context)
 
         if var_def not in Gamma.ls:
-            raise CIC_SYS_Error(f"The definition '{var_def}' is not contained in the context.")
+            raise Meta_Sys_Error(f"The definition '{var_def}' is not contained in the context.")
         
         self.__var_def = var_def
         self.__Gamma = Gamma

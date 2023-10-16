@@ -16,3 +16,9 @@ Principle of implementation:
 - The definitional equality of CIC is represented by the `__eq__` relation for `Expr` classes.
 
 It is better to consider Dirac notations as the new sorts of CIC, because they follow different calculation rules, and in this way we can embed the operations of Dirac notations into the CIC system directly.
+
+
+The file `metadef.py` provides the tools for construting the meta system. It includes:
+- `MetaTerm`: the class for all meta terms.
+- `meta_term` and `concrete_term`: the decorator to register the subclass of `MetaTerm` and automatically generates the meta term information. `concrete_term` corresponds to concrete proof terms that can be actually constructed in the meta system.
+- `meta_system_check`: a method to check the validity of the current meta system and generates the document `meta_rule.txt`. This should be executed at the end of a meta system definition (typically at the end of the `__init__.py` file of the package.)

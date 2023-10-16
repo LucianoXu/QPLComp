@@ -3,14 +3,20 @@ from __future__ import annotations
 
 from typing import Dict, Type, List, Tuple
 
-from .error import *
-from ..metaproof import MetaProof
+from ..metadef import *
 
 
 #############################################################
 # The definition for terms
 
-class Term:
+@meta_term
+class Term(MetaTerm):
+    '''
+    term
+    ```
+    _
+    ```
+    '''
 
     def __eq__(self, other : Term) -> bool:
         '''
@@ -57,7 +63,14 @@ class Term:
 # The Sorts.
 ####
 
+@meta_term
 class Sort(Term):
+    '''
+    sort
+    ```
+    _
+    ```
+    '''
     def __eq__(self, other : Term) -> bool:
         return isinstance(other, type(self))
     
@@ -76,23 +89,56 @@ class Sort(Term):
     def dependent(self, x: Var) -> bool:
         return False
 
+
+@concrete_term
 class SProp(Sort):
+    '''
+    term-SProp
+    ```
+    SProp
+    ```
+    '''
+
     def __str__(self) -> str:
         return "SProp"
 
+@concrete_term
 class Prop(Sort):
+    '''
+    term-Prop
+    ```
+    Prop
+    ```
+    '''
+
     def __str__(self) -> str:
         return "Prop"
 
+@concrete_term
 class Set(Sort):
+    '''
+    term-Set
+    ```
+    Set
+    ```
+    '''
+
     def __str__(self) -> str:
         return "Set"
         
+@concrete_term
 class Type_i(Sort):
+    '''
+    term-Type
+    ```
+    Type(i)
+    ```
+    '''
+
     def __init__(self, i : int):
-        CIC_SYS_type_check(i, int)
+        Meta_Sys_type_check(i, int)
         if i <= 0:
-            raise CIC_SYS_Error("Invalid universe number.")
+            raise Meta_Sys_Error("Invalid universe number.")
         self.__i = i
 
     @property
@@ -113,9 +159,17 @@ class Type_i(Sort):
 # Other term constructions.
 ###
 
+@concrete_term
 class Var(Term):
+    '''
+    term-Var
+    ```
+    x
+    ```
+    '''
+
     def __init__(self, name : str):
-        CIC_SYS_type_check(name, str)
+        Meta_Sys_type_check(name, str)
         self.__name = name
 
     def __hash__(self) -> int:
@@ -166,10 +220,17 @@ class Var(Term):
 
         return Var(name)
     
-
+@concrete_term
 class Const(Term):
+    '''
+    term-Const
+    ```
+    c
+    ```
+    '''
+
     def __init__(self, name : str):
-        CIC_SYS_type_check(name, str)
+        Meta_Sys_type_check(name, str)
         self.__name = name
 
     def __hash__(self) -> int:
@@ -204,10 +265,18 @@ class Const(Term):
 # Terms that contain a bound variable.
 ###
 
+@meta_term
 class BoundTerm(Term):
+    '''
+    term-bound
+    ```
+    _
+    ```
+    '''
+
     def __init__(self, x : Var):
         # the bound variable
-        CIC_SYS_type_check(x, Var)
+        Meta_Sys_type_check(x, Var)
         self.__x = x
 
     @property
@@ -221,13 +290,20 @@ class BoundTerm(Term):
         '''
         raise NotImplementedError()
 
-
+@concrete_term
 class Prod(BoundTerm):
+    '''
+    term-prod
+    ```
+    ∀x:T, U
+    ```
+    '''
+
     def __init__(self, x : Var, T : Term, U : Term):
         super().__init__(x)
-        CIC_SYS_type_check(T, Term)
+        Meta_Sys_type_check(T, Term)
         self.__T = T
-        CIC_SYS_type_check(U, Term)
+        Meta_Sys_type_check(U, Term)
         self.__U = U
 
     
@@ -292,17 +368,24 @@ class Prod(BoundTerm):
     def replace_bound(self, var : Var) -> Prod:
         # security check. necessary?
         # if var in self.free_var():
-        #     raise CIC_SYS_Error(f"Invalid bound replacement: variable '{var}' is free in '{self}'.")
+        #     raise Meta_Sys_Error(f"Invalid bound replacement: variable '{var}' is free in '{self}'.")
         
         return Prod(var, self.T.substitute(self.x, var), self.U.substitute(self.x, var))
         
-
+@concrete_term
 class Abstract(BoundTerm):
+    '''
+    term-lambda
+    ```
+    λx:T.u
+    ```
+    '''
+
     def __init__(self, x : Var, T : Term, u : Term):
         super().__init__(x)
-        CIC_SYS_type_check(T, Term)
+        Meta_Sys_type_check(T, Term)
         self.__T = T
-        CIC_SYS_type_check(u, Term)
+        Meta_Sys_type_check(u, Term)
         self.__u = u
     
     @property
@@ -357,12 +440,19 @@ class Abstract(BoundTerm):
         
 
 
-
+@concrete_term
 class Apply(Term):
+    '''
+    term-apply
+    ```
+    t u
+    ```
+    '''
+
     def __init__(self, t : Term, u : Term):
-        CIC_SYS_type_check(t, Term)
+        Meta_Sys_type_check(t, Term)
         self.__t = t
-        CIC_SYS_type_check(u, Term)
+        Meta_Sys_type_check(u, Term)
         self.__u = u
 
     @property
@@ -399,15 +489,22 @@ class Apply(Term):
         return Apply(self.t.substitute(x, t), self.u.substitute(x, t))
     
 
-    
+@concrete_term
 class Let_in(BoundTerm):
+    '''
+    term-let-in
+    ```
+    let x:=t:T in u
+    ```
+    '''
+
     def __init__(self, x : Var, t : Term, T : Term, u : Term):
         super().__init__(x)
-        CIC_SYS_type_check(t, Term)
+        Meta_Sys_type_check(t, Term)
         self.__t = t
-        CIC_SYS_type_check(T, Term)
+        Meta_Sys_type_check(T, Term)
         self.__T = T
-        CIC_SYS_type_check(u, Term)
+        Meta_Sys_type_check(u, Term)
         self.__u = u
 
     @property
@@ -468,17 +565,23 @@ class Let_in(BoundTerm):
 # Meta proof objects
 ###
 
-
+@concrete_term
 class MP_IsSort(MetaProof):
     '''
+    is-sort
+    ```
+    s ∈ S
+    ```
+
     The proof for `s ∈ S`.
     '''
+
     def __init__(self, s : Term):
-        CIC_SYS_type_check(s, Term)
+        Meta_Sys_type_check(s, Term)
         self.__s = s
 
         if not isinstance(s, Sort):
-            raise CIC_SYS_Error(f"The term '{self.__s}' is not a sort.")
+            raise Meta_Sys_Error(f"The term '{self.__s}' is not a sort.")
         
     @property
     def s(self) -> Term:
