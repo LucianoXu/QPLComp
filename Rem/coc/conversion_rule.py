@@ -9,15 +9,15 @@ from __future__ import annotations
 
 from .context import *
 from .environment import *
-from .typing_rule import MP_WF, MP_WT
+from .typing_rule import Rem_WF, Rem_WT
 
-from ..metadef import MetaProof
+from ..rem import RemProof
 
 
 # alpha-conversion judgement is implemented in `Term`.
     
-@meta_term
-class MP_reduction(MetaProof):
+@Rem_term
+class Rem_reduction(RemProof):
     '''
     reduce
     ```
@@ -27,10 +27,17 @@ class MP_reduction(MetaProof):
     Note: the reduction rule here also considers alpha-convertibility.
     '''
     def __init__(self, E : Environment, Gamma : Context, t1 : Term, t2 : Term):
-        Meta_Sys_type_check(E, Environment)
-        Meta_Sys_type_check(Gamma, Context)
-        Meta_Sys_type_check(t1, Term)
-        Meta_Sys_type_check(t2, Term)
+        '''
+        Parameters -> Rule Terms:
+        - `E` -> `E`
+        - `Gamma` -> `Γ`
+        - `t1` -> `t1`
+        - `t2` -> `t2`
+        '''
+        self.Rem_type_check(E, Environment, 'E')
+        self.Rem_type_check(Gamma, Context, 'Γ')
+        self.Rem_type_check(t1, Term, 't1')
+        self.Rem_type_check(t2, Term, 't2')
 
         self.__E = E
         self.__Gamma = Gamma
@@ -57,8 +64,8 @@ class MP_reduction(MetaProof):
         return f"{self.E}{self.Gamma} ⊢ {self.t1} ▷ {self.t2}"
     
 
-@concrete_term
-class MP_reduction_trans(MP_reduction):
+@concrete_Rem_term
+class Rem_reduction_trans(Rem_reduction):
     '''
     reduce-trans
     ```
@@ -71,30 +78,29 @@ class MP_reduction_trans(MP_reduction):
     The transitivity construction of reduction relation.
     '''
     
-    def __init__(self, red1 : MP_reduction, red2 : MP_reduction):
+    def __init__(self, red1 : Rem_reduction, red2 : Rem_reduction):
+        '''
+        Parameters -> Rule Terms:
+        - `red1` -> `E[Γ] ⊢ t1 ▷ t2`
+        - `red2` -> `E[Γ] ⊢ t2 ▷ t3`
+        '''
+        self.Rem_type_check(red1, Rem_reduction, 'E[Γ] ⊢ t1 ▷ t2')
 
-        # proof of `E[Γ] ⊢ t1 ▷ t2`
-        Meta_Sys_type_check(red1, MP_reduction)
+        self.Rem_type_check(red2, Rem_reduction, 'E[Γ] ⊢ t2 ▷ t3')
 
-        # proof of `E[Γ] ⊢ t2 ▷ t3`
-        Meta_Sys_type_check(red2, MP_reduction)
-
-        # consistent 'E'
-        if not red1.E == red2.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        # consistent `E`
+        self.Rem_consistency_check(red1.E, red2.E, 'E')
         
-        # consistent 'Γ'
-        if not red1.Gamma == red2.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(red1.Gamma, red2.Gamma, 'Γ')
         
-        # consistent 't2'
-        if not red1.t2 == red2.t1:
-            raise Meta_Sys_Error("Inconsistent intermediate term.")
+        # consistent `t2`
+        self.Rem_consistency_check(red1.t2, red2.t1, 't2')
         
         self.__red1 = red1
         self.__red2 = red2
 
-        # the conclusion `E[Γ] ⊢ t1 ▷ t3`
+        # the conclusion
         super().__init__(red1.E, red1.Gamma, red1.t1, red2.t2)
 
     def premises(self) -> str:
@@ -102,8 +108,8 @@ class MP_reduction_trans(MP_reduction):
         res += self.__red2.conclusion() + "\n"
         return res
 
-@concrete_term
-class MP_beta_reduction(MP_reduction):
+@concrete_Rem_term
+class Rem_beta_reduction(Rem_reduction):
     '''
     β-reduction
     ```
@@ -113,27 +119,28 @@ class MP_beta_reduction(MP_reduction):
     '''
     
 
-    def __init__(self, E : Environment, Gamma : Context, t1 : Apply, t2 : Term):
+    def __init__(self, E : Environment, Gamma : Context, t1 : Apply):
+        '''
+        Parameters -> Rule Terms:
+        - `E` -> `E`
+        - `Gamma` -> `Γ`
+        - `t1` -> `(λx:T.t) u`
+        '''
+        self.Rem_type_check(t1, Apply, '(λx:T.t) u')
+        self.Rem_type_check(t1.t, Abstract, 'λx:T.t')
+        assert isinstance(t1.t, Abstract)
 
-        # check `((λx:T.t) u)`
-        Meta_Sys_type_check(t1, Apply)
-        Meta_Sys_type_check(t1.t, Abstract)
-        assert(isinstance(t1.t, Abstract))
 
-        # check `t2`
-        t2_sub = t2.substitute(t1.t.x, t1.u)
-        if not t2_sub.alpha_convertible(t2):
-            raise Meta_Sys_Error(f"beta-reduction: the substitution result '{t2_sub}' is not alpha-convertible to '{t2}'.")
-        
         # the conclusion `E[Γ] ⊢ ((λx:T.t) u) ▷ t{x/u}`
-        super().__init__(E, Gamma, t1, t2)
+        t2_sub = t1.t.u.substitute(t1.t.x, t1.u)        
+        super().__init__(E, Gamma, t1, t2_sub)
 
     def premises(self) -> str:
         return ""
 
 
-@concrete_term
-class MP_delta_reduction(MP_reduction):
+@concrete_Rem_term
+class Rem_delta_reduction(Rem_reduction):
     '''
     δ-reduction
     ```
@@ -144,23 +151,25 @@ class MP_delta_reduction(MP_reduction):
     ```
     '''
 
-    def __init__(self, wf : MP_WF, x_in_Gamma : MP_Cont_Contain_Def):
+    def __init__(self, wf : Rem_WF, x_in_Gamma : Rem_Cont_Contain_Def):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        - `x_in_Gamma` -> `(x:=t:T) ∈ Γ`
+        '''
+        
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_type_check(wf, MP_WF)
+        self.Rem_type_check(x_in_Gamma, Rem_Cont_Contain_Def, '(x:=t:T) ∈ Γ')
 
-        # proof of `(x:=t:T) ∈ Γ`
-        Meta_Sys_type_check(x_in_Gamma, MP_Cont_Contain_Def)
-
-        # consistent 'Γ'
-        if not wf.Gamma == x_in_Gamma.Gamma:
-            raise Meta_Sys_Error("Inconsistent contexts.")
+        # consistent `Γ`
+        self.Rem_consistency_check(wf.Gamma, x_in_Gamma, 'Γ')
         
         self.__wf = wf
         self.__x_in_Gamma = x_in_Gamma
 
-        # the conclusion `E[Γ] ⊢ x ▷ t`
-        super().__init__(wf.E, wf.Gamma, x_in_Gamma.var_def.x, x_in_Gamma.var_def.t)
+        # the conclusion
+        super().__init__(wf.E, wf.Gamma, x_in_Gamma.x_def.x, x_in_Gamma.x_def.t)
 
     def premises(self) -> str:
         res = self.__wf.conclusion() + "\n"
@@ -168,8 +177,8 @@ class MP_delta_reduction(MP_reduction):
         return res
     
 
-@concrete_term
-class MP_Delta_reduction(MP_reduction):
+@concrete_Rem_term
+class Rem_Delta_reduction(Rem_reduction):
     '''
     Δ-reduction
     ```
@@ -180,23 +189,25 @@ class MP_Delta_reduction(MP_reduction):
     ```
     '''
 
-    def __init__(self, wf : MP_WF, c_in_E : MP_Env_Contain_Def):
+    def __init__(self, wf : Rem_WF, c_in_E : Rem_Env_Contain_Def):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        - `c_in_E` -> `(c:=t:T) ∈ E`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_type_check(wf, MP_WF)
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
 
-        # proof of `(c:=t:T) ∈ E`
-        Meta_Sys_type_check(c_in_E, MP_Env_Contain_Def)
+        self.Rem_type_check(c_in_E, Rem_Env_Contain_Def, '(c:=t:T) ∈ E')
 
-        # consistent 'E'
-        if not wf.E == c_in_E.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        # consistent `E`
+        self.Rem_consistency_check(wf.E, c_in_E, 'E')
         
         self.__wf = wf
         self.__c_in_E = c_in_E
 
-        # the conclusion `E[Γ] ⊢ x ▷ t`
-        super().__init__(wf.E, wf.Gamma, c_in_E.const_def.c, c_in_E.const_def.t)
+        # the conclusion
+        super().__init__(wf.E, wf.Gamma, c_in_E.c_def.c, c_in_E.c_def.t)
 
     def premises(self) -> str:
         res = self.__wf.conclusion() + "\n"
@@ -207,8 +218,8 @@ class MP_Delta_reduction(MP_reduction):
 # ι-reduction is omitted here.
 
 
-@concrete_term
-class MP_zeta_reduction(MP_reduction):
+@concrete_Rem_term
+class Rem_zeta_reduction(Rem_reduction):
     '''
     ζ-reduction
     ```
@@ -220,43 +231,44 @@ class MP_zeta_reduction(MP_reduction):
     ```
     '''
 
-    def __init__(self, wf : MP_WF, wt_outer : MP_WT, wt_inner : MP_WT):
+    def __init__(self, wf : Rem_WF, wt_outer : Rem_WT, wt_inner : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        - `wt_outer` -> `E[Γ] ⊢ u : U`
+        - `wt_inner` -> `E[Γ::(x:=u:U)] ⊢ t : T`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_type_check(wf, MP_WF)
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
 
-        # proof of `E[Γ] ⊢ u : U`
-        Meta_Sys_type_check(wt_outer, MP_WT)
+        self.Rem_type_check(wt_outer, Rem_WT, 'E[Γ] ⊢ u : U')
 
-        # proof of `E[Γ::(x:=u:U)] ⊢ t : T`
-        Meta_Sys_type_check(wt_inner, MP_WT)
+        self.Rem_type_check(wt_inner, Rem_WT, 'E[Γ::(x:=u:U)] ⊢ t : T')
 
-        # consistent 'E'
-        if wf.E != wt_outer.E or wf.E != wt_inner.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
-        
+        # consistent `E`
+        self.Rem_consistency_check(wf.E, wt_outer.E, 'E')
+        self.Rem_consistency_check(wf.E, wt_inner.E, 'E')
+
         # break `Γ::(x:=u:U)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
-        if not isinstance(dec, LocalDef):
-            raise Meta_Sys_Error("Invalid inner context.")
+        self.Rem_type_check(dec, LocalDef, 'Γ::(x:=u:U)')
+        assert isinstance(dec, LocalDef)
 
-        # consistent 'Γ'
-        if wf.Gamma != wt_outer.Gamma or wf.Gamma != Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(wf.Gamma, wt_outer.Gamma, 'Γ')
+        self.Rem_consistency_check(wf.Gamma, Gamma_pre, 'Γ')
         
-        # consistent 'u'
-        if not wt_outer.t == dec.t:
-            raise Meta_Sys_Error("Inconsistent 'u'.")
+        # consistent `u`
+        self.Rem_consistency_check(wt_outer.t, dec.t, 'u')
         
-        # consistent 'U'
-        if not wt_outer.T == dec.T:
-            raise Meta_Sys_Error("Inconsistent 'U'.")
+        # consistent `U`
+        self.Rem_consistency_check(wt_outer.T, dec.T, 'U')
         
         self.__wf = wf
         self.__wt_outer = wt_outer
         self.__wt_inner = wt_inner
 
-        # the conclusion `E[Γ] ⊢ let x := u : U in t ▷ t{x/u}`
+        # the conclusion
         t1 = Let_in(dec.x, dec.t, dec.T, wt_inner.t)
         t2 = wt_inner.t.substitute(dec.x, wt_outer.t)
         super().__init__(wf.E, wf.Gamma, t1, t2)
@@ -268,8 +280,8 @@ class MP_zeta_reduction(MP_reduction):
         return res
     
 
-@concrete_term
-class MP_eta_conversion(MetaProof):
+@concrete_Rem_term
+class Rem_eta_conversion(RemProof):
     '''
     η-expansion (conversion)
 
@@ -286,46 +298,49 @@ class MP_eta_conversion(MetaProof):
     Note that this rule is 'convertible' but not 'reducible'.
     '''
 
-    def __init__(self, wt : MP_WT, convert : MP_convertible):
-        
-        # proof of `E[Γ] ⊢ λx:T.u : ∀x:T, U`
-        Meta_Sys_type_check(wt, MP_WT)
-        if not isinstance(wt.t, Abstract) or not isinstance(wt.T, Prod):
-            raise Meta_Sys_Error(f"Invalid term for η-expansion: '{wt}'.")
+    def __init__(self, wt : Rem_WT, convert : Rem_convertible):
+        '''
+        Parameters -> Rule Terms:
+        - `wt` -> `E[Γ] ⊢ λx:T.u : ∀y:T, U`
+        - `convert` -> `E[Γ::(x:T)] ⊢ u =βδιζη (t x)`
+        '''
 
-        # proof of `E[Γ::(x:T)] ⊢ u =βδιζη (t x)`
-        Meta_Sys_type_check(convert, MP_convertible)
-        if not isinstance(convert.t2, Apply):
-            raise Meta_Sys_Error(f"Invalid conversion proof: '{convert}'.")
+        self.Rem_type_check(wt, Rem_WT, 'E[Γ] ⊢ λx:T.u : ∀x:T, U')
+        self.Rem_type_check(wt.t, Abstract, 'λx:T.u')
+        assert isinstance(wt.t, Abstract)
+        self.Rem_type_check(wt.T, Prod, '∀y:T, U')
+        assert isinstance(wt.T, Prod)
+
+
+        self.Rem_type_check(convert, Rem_convertible, 'E[Γ::(x:T)] ⊢ u =βδιζη (t x)')
+        self.Rem_type_check(convert.t2, Apply, 't x')
+        assert isinstance(convert.t2, Apply)
 
         # break `Γ::(x:T)`
         Gamma_pre, dec = convert.Gamma.pop()
 
-        # consistent 'E'
-        if not wt.E == convert.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        # consistent `E`
+        self.Rem_consistency_check(wt.E, convert.E, 'E')
         
-        # consitent 'Γ'
-        if not wt.Gamma == Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(wt.Gamma, Gamma_pre, 'Γ')
         
-        # consistent 'x'
-        if wt.t.x != dec.x or wt.t.x != convert.t2.u:
-            raise Meta_Sys_Error("Inconsistent 'x'.")
+        # consistent `x`
+        self.Rem_consistency_check(wt.t.x, dec.x, 'x')
+        self.Rem_consistency_check(wt.t.x, convert.t2.u, 'x')
         
-        # consistent 'T'
-        if wt.t.T != wt.T.T or wt.t.T != dec.T:
-            raise Meta_Sys_Error("Inconsistent 'T'.")
+        # consistent `T`
+        self.Rem_consistency_check(wt.t.T, wt.T.T, 'T')
+        self.Rem_consistency_check(wt.t.T, dec.T, 'T')
         
-        # consistent 'u'
-        if wt.t.u != convert.t1:
-            raise Meta_Sys_Error("Inconsistent 'u'.")
+        # consistent `u`
+        self.Rem_consistency_check(wt.t.u, convert.t1, 'u')
         
         self.__wt = wt
         self.__convert = convert
 
-        # the proof `E[Γ] ⊢ t ~η λx:T.u`
-        # complete
+        # the proof `E[Γ] ⊢ t ~η λx:T.u` complete
+
 
     @property
     def E(self) -> Environment:
@@ -337,12 +352,12 @@ class MP_eta_conversion(MetaProof):
 
     @property
     def t(self) -> Term:
-        assert(isinstance(self.__convert.t2, Apply))
+        assert isinstance(self.__convert.t2, Apply)
         return self.__convert.t2.t
     
     @property
     def lam(self) -> Abstract:
-        assert(isinstance(self.__wt.t, Abstract))
+        assert isinstance(self.__wt.t, Abstract)
         return self.__wt.t
 
     def premises(self) -> str:
@@ -354,8 +369,8 @@ class MP_eta_conversion(MetaProof):
         return f"{self.E}{self.Gamma} ⊢ {self.t} =η {self.lam}"
     
 
-@concrete_term
-class MP_convertible(MetaProof):
+@concrete_Rem_term
+class Rem_convertible(RemProof):
     '''
     βδιζη-convertible.
     ```
@@ -365,52 +380,52 @@ class MP_convertible(MetaProof):
         ----------------------------------
         E[Γ] ⊢ t1 =βδιζη t2
     ```
-    Note : `E[Γ] ⊢ t1 ▷ ... ▷ u1` is also represented by `MP_reduction` because of transitivity object `MP_reduction_trans`.
+    Note : `E[Γ] ⊢ t1 ▷ ... ▷ u1` is also represented by `Rem_reduction` because of transitivity object `Rem_reduction_trans`.
     '''
 
-    def __init__(self, red1 : MP_reduction, red2 : MP_reduction, u_eq_proof : None | MP_eta_conversion):
+    def __init__(self, red1 : Rem_reduction, red2 : Rem_reduction, u_eq_proof : None | Rem_eta_conversion):
         '''
-        u_eq_proof:
+        Parameters -> Rule Terms:
+        - `red1` -> `E[Γ] ⊢ t1 ▷ ... ▷ u1`
+        - `red2` -> `E[Γ] ⊢ t2 ▷ ... ▷ u2`
+        - `u_eq_proof` :
             - `None`: proof by alpha-conversion
-            - `MP_eta_conversion` : proof by eta-conversion (automatically detect `u1` `u2`)
+            - `Rem_eta_conversion` : proof by eta-conversion (automatically detect `u1` `u2`)
         '''
 
-        # proof of `E[Γ] ⊢ t1 ▷ ... ▷ u1`
-        Meta_Sys_type_check(red1, MP_reduction)
+        self.Rem_type_check(red1, Rem_reduction, 'E[Γ] ⊢ t1 ▷ ... ▷ u1')
 
-        # proof of `E[Γ] ⊢ t2 ▷ ... ▷ u2`
-        Meta_Sys_type_check(red2, MP_reduction)
+        self.Rem_type_check(red2, Rem_reduction, 'E[Γ] ⊢ t2 ▷ ... ▷ u2')
 
-        # proof of `u1 ~α u2 or u1 ~η u2 or u2 ~η u1`
-        Meta_Sys_type_check(u_eq_proof, (type(None), MP_eta_conversion))
+        self.Rem_type_check(u_eq_proof, (type(None), Rem_eta_conversion), 'u1 ~α u2 or u1 ~η u2 or u2 ~η u1')
 
-        # consistent 'E'
-        if red1.E != red2.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        # consistent `E`
+        self.Rem_consistency_check(red1.E, red2.E, 'E')
         
-        # consistent 'Γ'
-        if red1.Gamma != red2.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(red1.Gamma, red2.Gamma, 'Γ')
 
         # branch : proof by alpha-conversion
         if u_eq_proof is None:
-            if not red1.t2.alpha_convertible(red2.t2):
-                raise Meta_Sys_Error(f"βδιζη-convertible: proposed to proof by alpha-conversion, but '{red1.t2}' and '{red2.t2}' are not alpha-convertible.")
+            self.Rem_other_check(
+                red1.t2.alpha_convertible(red2.t2),
+                f"proposed to proof by alpha-conversion, but '{red1.t2}' and '{red2.t2}' are not alpha-convertible."
+            )
             
         # branch : proof by eta-conversion
         else:
-            assert(isinstance(u_eq_proof, MP_eta_conversion))
+            assert isinstance(u_eq_proof, Rem_eta_conversion)
 
-            # consistent 'E'
-            if u_eq_proof.E != red1.E:
-                raise Meta_Sys_Error("Inconsistent environment.")
+            # consistent `E`
+            self.Rem_consistency_check(u_eq_proof.E, red1.E, 'E')
             
-            # consistent 'Γ'
-            if u_eq_proof.Gamma != red1.Gamma:
-                raise Meta_Sys_Error("Inconsistent context.")
+            # consistent `Γ`
+            self.Rem_consistency_check(u_eq_proof.Gamma, red1.Gamma, 'Γ')
 
-            if not ((red1.t2 == u_eq_proof.t and red2.t2 == u_eq_proof.lam) or (red1.t2 == u_eq_proof.lam and red2.t2 == u_eq_proof.t)):
-                raise Meta_Sys_Error(f"Inconsistent eta-conversion proof : {u_eq_proof}.")
+            self.Rem_other_check(
+                ((red1.t2 == u_eq_proof.t and red2.t2 == u_eq_proof.lam) or (red1.t2 == u_eq_proof.lam and red2.t2 == u_eq_proof.t)),
+                f"Inconsistent eta-conversion proof : {u_eq_proof}."
+            )
 
             
         self.__red1 = red1
@@ -449,8 +464,8 @@ class MP_convertible(MetaProof):
 # Subtyping conversion.
 ###
 
-@meta_term
-class MP_subtyping(MetaProof):
+@Rem_term
+class Rem_subtyping(RemProof):
     '''
     subtype
     ```
@@ -459,10 +474,18 @@ class MP_subtyping(MetaProof):
     '''
 
     def __init__(self, E : Environment, Gamma : Context, t1 : Term, t2 : Term):
-        Meta_Sys_type_check(E, Environment)
-        Meta_Sys_type_check(Gamma, Context)
-        Meta_Sys_type_check(t1, Term)
-        Meta_Sys_type_check(t2, Term)
+        '''
+        Parameters -> Rule Terms:
+        - `E` -> `E`
+        - `Gamma` -> `Γ`
+        - `t1` -> `t1`
+        - `t2` -> `t2`
+        '''
+
+        self.Rem_type_check(E, Environment, 'E')
+        self.Rem_type_check(Gamma, Context, 'Γ')
+        self.Rem_type_check(t1, Term, 't1')
+        self.Rem_type_check(t2, Term, 't2')
         self.__E = E
         self.__Gamma = Gamma
         self.__t1 = t1
@@ -487,8 +510,8 @@ class MP_subtyping(MetaProof):
     def conclusion(self) -> str:
         return f"{self.E}{self.Gamma} ⊢ {self.t1} ≤βδιζη {self.t2}"
 
-@meta_term
-class MP_subtyping_trans(MP_subtyping):
+@Rem_term
+class Rem_subtyping_trans(Rem_subtyping):
     '''
     subtype-trans
     ```
@@ -498,30 +521,30 @@ class MP_subtyping_trans(MP_subtyping):
         E[Γ] ⊢ t1 ≤βδιζη t3
     ```
     '''
-    def __init__(self, subtype1 : MP_subtyping, subtype2 : MP_subtyping):
+    def __init__(self, subtype1 : Rem_subtyping, subtype2 : Rem_subtyping):
+        '''
+        Parameters -> Rule Terms:
+        - `subtype1` -> `E[Γ] ⊢ t1 ≤βδιζη t2`
+        - `subtype2` -> `E[Γ] ⊢ t2 ≤βδιζη t3`
+        '''
 
-        # proof of `E[Γ] ⊢ t1 ≤βδιζη t2`
-        Meta_Sys_type_check(subtype1, MP_subtyping)
+        self.Rem_type_check(subtype1, Rem_subtyping, 'E[Γ] ⊢ t1 ≤βδιζη t2')
 
-        # proof of `E[Γ] ⊢ t2 ≤βδιζη t3`
-        Meta_Sys_type_check(subtype2, MP_subtyping)
+        self.Rem_type_check(subtype2, Rem_subtyping, 'E[Γ] ⊢ t2 ≤βδιζη t3')
 
-        # consistent 'E'
-        if not subtype1.E == subtype2.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        # consistent `E`
+        self.Rem_consistency_check(subtype1.E, subtype2.E, 'E')
         
-        # consistent 'Γ'
-        if not subtype1.Gamma == subtype2.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(subtype1.Gamma, subtype2.Gamma, 'Γ')
         
-        # consistent 't2'
-        if not subtype1.t2 == subtype2.t1:
-            raise Meta_Sys_Error("Inconsistent 't2'.")
+        # consistent `t2`
+        self.Rem_consistency_check(subtype1.t2, subtype2.t1, 't2')
         
         self.__subtype1 = subtype1
         self.__subtype2 = subtype2
 
-        # the conclusion `E[Γ] ⊢ t1 ≤βδιζη t3`
+        # the conclusion
         super().__init__(subtype1.E, subtype1.Gamma, subtype1.t1, subtype2.t2)
 
     def premises(self) -> str:
@@ -530,8 +553,8 @@ class MP_subtyping_trans(MP_subtyping):
         return res
 
 
-@concrete_term
-class MP_subtyping_convert(MP_subtyping):
+@concrete_Rem_term
+class Rem_subtyping_convert(Rem_subtyping):
     '''
     subtype-convert
     ```
@@ -540,22 +563,25 @@ class MP_subtyping_convert(MP_subtyping):
         E[Γ] ⊢ t1 ≤βδιζη t2
     ```
     '''
-    def __init__(self, convert : MP_convertible):
+    def __init__(self, convert : Rem_convertible):
+        '''
+        Parameters -> Rule Terms:
+        - `convert` -> `E[Γ] ⊢ t1 =βδιζη t2`
+        '''
 
-        # proof of `E[Γ] ⊢ t1 =βδιζη t2`
-        Meta_Sys_type_check(convert, MP_convertible)
+        self.Rem_type_check(convert, Rem_convertible, 'E[Γ] ⊢ t1 =βδιζη t2')
         
         self.__convert = convert
 
-        # the conclusion `E[Γ] ⊢ t1 ≤βδιζη t2`
+        # the conclusion
         super().__init__(convert.E, convert.Gamma, convert.t1, convert.t2)
 
     def premises(self) -> str:
         return self.__convert.conclusion() + "\n"
     
     
-@concrete_term
-class MP_subtyping_universe(MP_subtyping):
+@concrete_Rem_term
+class Rem_subtyping_universe(Rem_subtyping):
     '''
     subtype-universe
     ```
@@ -565,31 +591,28 @@ class MP_subtyping_universe(MP_subtyping):
     ```
     '''
     def __init__(self, E : Environment, Gamma : Context, i : int, j : int):
-
-        # proof of `i ≤ j`
-        Meta_Sys_type_check(i, int)
-        Meta_Sys_type_check(j, int)
-        if not 0 < i <= j:
-            raise Meta_Sys_Error(f"The universe number condition 0 < i <= j is not satisfied for i = {i} and j = {j}.")
+        '''
+        Parameters -> Rule Terms:
+        - `i` -> `i`
+        - `j` -> `j`
+        '''
         
-        # consitent 'E'
-        Meta_Sys_type_check(E, Environment)
-
-        # consistent 'Gamma'
-        Meta_Sys_type_check(Gamma, Context)
+        self.Rem_type_check(i, int, 'i')
+        self.Rem_type_check(j, int, 'j')
+        self.Rem_other_check(0 < i <= j, f"The universe number condition 0 < i <= j is not satisfied for i = {i} and j = {j}.")
         
         self.__i = i
         self.__j = j
 
-        # the conclusion `E[Γ] ⊢ Type(i) ≤βδιζη Type(j)`
+        # the conclusion
         super().__init__(E, Gamma, Type_i(i), Type_i(j))
 
     def premises(self) -> str:
         return f"{self.__i} ≤ {self.__j}"
         
 
-@concrete_term
-class MP_subtyping_Set(MP_subtyping):
+@concrete_Rem_term
+class Rem_subtyping_Set(Rem_subtyping):
     '''
     subtype-Set
     ```
@@ -598,25 +621,28 @@ class MP_subtyping_Set(MP_subtyping):
     ```
     '''
     def __init__(self, E : Environment, Gamma : Context, i : int):
+        '''
+        Parameters -> Rule Terms:
+        - `E` -> `E`
+        - `Gamma` -> `Γ`
+        - `i` -> `i`
+        '''
 
         # proof check
-        Meta_Sys_type_check(E, Environment)
-        Meta_Sys_type_check(Gamma, Context)
-        Meta_Sys_type_check(i, int)
-        if not 0 < i:
-            raise Meta_Sys_Error(f"Invalid universe number: {i}.")
+        self.Rem_type_check(i, int, 'i')
+        self.Rem_other_check(0 < i, f"Invalid universe number: {i}.")
         
         self.__i = i
 
-        # the conclusion `E[Γ] ⊢ Set ≤βδιζη Type(i)`
+        # the conclusion
         super().__init__(E, Gamma, Set(), Type_i())
 
     def premises(self) -> str:
         return ""
     
 
-@concrete_term
-class MP_subtyping_Prop(MP_subtyping):
+@concrete_Rem_term
+class Rem_subtyping_Prop(Rem_subtyping):
     '''
     subtype-Prop
     ```
@@ -625,21 +651,20 @@ class MP_subtyping_Prop(MP_subtyping):
     ```
     '''
     def __init__(self, E : Environment, Gamma : Context):
+        '''
+        Parameters -> Rule Terms:
+        - `E` -> `E`
+        - `Gamma` -> `Γ`
+        '''
 
-        # type check 'E'
-        Meta_Sys_type_check(E, Environment)
-
-        # type check 'Γ'
-        Meta_Sys_type_check(Gamma, Context)
-
-        # the conclusion `E[Γ] ⊢ Prop ≤βδιζη Set`
+        # the conclusion
         super().__init__(E, Gamma, Prop(), Set())
 
     def premises(self) -> str:
         return ""
     
-@concrete_term
-class MP_subtyping_lam(MP_subtyping):
+@concrete_Rem_term
+class Rem_subtyping_lam(Rem_subtyping):
     '''
     subtype-lam
     ```
@@ -649,33 +674,33 @@ class MP_subtyping_lam(MP_subtyping):
         E[Γ] ⊢ ∀x:T, T' ≤βδιζη ∀x:U, U'
     ```
     '''
-    def __init__(self, convert : MP_convertible, subtype : MP_subtyping):
+    def __init__(self, convert : Rem_convertible, subtype : Rem_subtyping):
+        '''
+        Parameters -> Rule Terms:
+        - `convert` -> `E[Γ] ⊢ T =βδιζη U`
+        - `subtype` -> `E[Γ::(x:T)] ⊢ T' ≤βδιζη U'`
+        '''
 
-        # proof of `E[Γ] ⊢ T =βδιζη U`
-        Meta_Sys_type_check(convert, MP_convertible)
+        self.Rem_type_check(convert, Rem_convertible, 'E[Γ] ⊢ T =βδιζη U')
 
-        # proof of `E[Γ::(x:T)] ⊢ T' ≤βδιζη U'`
-        Meta_Sys_type_check(subtype, MP_subtyping)
+        self.Rem_type_check(subtype, Rem_subtyping, "E[Γ::(x:T)] ⊢ T' ≤βδιζη U'")
 
-        # consistent 'E'
-        if not convert.E == subtype.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        # consistent `E`
+        self.Rem_consistency_check(convert.E, subtype.E, 'E')
 
         # break `Γ::(x:T)`
         Gamma_pre, dec = subtype.Gamma.pop()
 
-        # consistent 'Γ'
-        if not convert.Gamma == Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(convert.Gamma, Gamma_pre, 'Γ')
         
-        # consistent 'T'
-        if not convert.t1 == dec.T:
-            raise Meta_Sys_Error("Inconsistent 'T'.")
+        # consistent `T`
+        self.Rem_consistency_check(convert.t1, dec.T, 'T')
         
         self.__convert = convert
         self.__subtype = subtype
 
-        # the conclusion `E[Γ] ⊢ ∀x:T, T' ≤βδιζη ∀x:U, U'`
+        # the conclusion
         t1 = Prod(dec.x, convert.t1, subtype.t1)
         t2 = Prod(dec.x, convert.t2, subtype.t2)
         super().__init__(convert.E, convert.Gamma, t1, t2)
@@ -695,8 +720,8 @@ class MP_subtyping_lam(MP_subtyping):
 # the Convertible proof (with subtyping) #
 ##########################################
 
-@concrete_term
-class MP_Conv(MP_WT):
+@concrete_Rem_term
+class Rem_Conv(Rem_WT):
     '''
     Conv
     ```
@@ -707,38 +732,39 @@ class MP_Conv(MP_WT):
         E[Γ] ⊢ t : U
     ```
     '''
-    def __init__(self, wt_U : MP_WT, wt_t : MP_WT, subtype : MP_subtyping):
+    def __init__(self, wt_U : Rem_WT, wt_t : Rem_WT, subtype : Rem_subtyping):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_U` -> `E[Γ] ⊢ U : s`
+        - `wt_t` -> `E[Γ] ⊢ t : T`
+        - `subtype` -> `E[Γ] ⊢ T ≤βδιζη U`
+        '''
 
-        # proof of `E[Γ] ⊢ U : s`
-        Meta_Sys_type_check(wt_U, MP_WT)
+        self.Rem_type_check(wt_U, Rem_WT, 'E[Γ] ⊢ U : s')
 
-        # proof of `E[Γ] ⊢ t : T`
-        Meta_Sys_type_check(wt_t, MP_WT)
+        self.Rem_type_check(wt_t, Rem_WT, 'E[Γ] ⊢ t : T')
 
-        # proof of `E[Γ] ⊢ T ≤βδιζη U`
-        Meta_Sys_type_check(subtype, MP_subtyping)
+        self.Rem_type_check(subtype, Rem_subtyping, 'E[Γ] ⊢ T ≤βδιζη U')
 
-        # consistent 'E'
-        if wt_U.E != wt_t.E or wt_U.E != subtype.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        # consistent `E`
+        self.Rem_consistency_check(wt_U.E, wt_t.E, 'E')
+        self.Rem_consistency_check(wt_U.E, subtype.E, 'E')
         
-        # consistent 'Γ'
-        if wt_U.Gamma != wt_t.Gamma or wt_U.Gamma != subtype.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(wt_U.Gamma, wt_t.Gamma, 'Γ')
+        self.Rem_consistency_check(wt_U.Gamma, subtype.Gamma, 'Γ')
         
-        # consistent 'U'
-        if wt_U.t != subtype.t2:
-            raise Meta_Sys_Error("Inconsistent 'U'.")
+        # consistent `U`
+        self.Rem_consistency_check(wt_U.t, subtype.t2, 'U')
         
-        # consistent 'T'
-        if wt_t.T != subtype.t1:
-            raise Meta_Sys_Error("Inconsistent 'T'.")
+        # consistent `T`
+        self.Rem_consistency_check(wt_t.T, subtype.t1, 'T')
         
         self.__wt_U = wt_U
         self.__wt_t = wt_t
         self.__subtype = subtype
 
-        # the conclusion 'E[Γ] ⊢ t : U'
+        # the conclusion
         super().__init__(wt_U.E, wt_U.Gamma, wt_t.t, wt_U.t)
 
     def premises(self) -> str:

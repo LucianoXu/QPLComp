@@ -14,8 +14,8 @@ from .environment import *
 ################################################################
 # rule framework
 
-@meta_term
-class MP_WF(MetaProof):
+@Rem_term
+class Rem_WF(RemProof):
     '''
     well-formed
     ```
@@ -24,8 +24,13 @@ class MP_WF(MetaProof):
     The proof of well-formed environment and valid contex.
     '''
     def __init__(self, E : Environment, Gamma : Context):
-        Meta_Sys_type_check(E, Environment)
-        Meta_Sys_type_check(Gamma, Context)
+        '''
+        Parameters -> Rule Terms:
+        - `E` -> `E`
+        - `Gamma` -> `Γ`
+        '''
+        self.Rem_type_check(E, Environment, 'E')
+        self.Rem_type_check(Gamma, Context, 'Γ')
         self.__E = E
         self.__Gamma = Gamma
 
@@ -40,8 +45,8 @@ class MP_WF(MetaProof):
     def conclusion(self) -> str:
         return f"WF({self.E}){self.Gamma}"
     
-@meta_term
-class MP_WT(MetaProof):
+@Rem_term
+class Rem_WT(RemProof):
     '''
     well-typed
     ```
@@ -50,10 +55,17 @@ class MP_WT(MetaProof):
     The proof of well-typed term.
     '''
     def __init__(self, E : Environment, Gamma : Context, t : Term, T : Term):
-        Meta_Sys_type_check(E, Environment)
-        Meta_Sys_type_check(Gamma, Context)
-        Meta_Sys_type_check(t, Term)
-        Meta_Sys_type_check(T, Term)
+        '''
+        Parameters -> Rule Terms:
+        - `E` -> `E`
+        - `Gamma` -> `Γ`
+        - `t` -> `t`
+        - `T` -> `T`
+        '''
+        self.Rem_type_check(E, Environment, 'E')
+        self.Rem_type_check(Gamma, Context, 'Γ')
+        self.Rem_type_check(t, Term, 't')
+        self.Rem_type_check(T, Term, 'T')
         self.__E = E
         self.__Gamma = Gamma
         self.__t = t
@@ -82,8 +94,8 @@ class MP_WT(MetaProof):
 ###############################################################
 # specific rules
 
-@concrete_term
-class MP_W_Empty(MP_WF):
+@concrete_Rem_term
+class Rem_W_Empty(Rem_WF):
     '''
     W-Empty
     ```
@@ -93,6 +105,9 @@ class MP_W_Empty(MP_WF):
     '''
 
     def __init__(self):
+        '''
+        Parameters -> Rule Terms: none.
+        '''
 
         # the conclusion `WF([])[]`
         super().__init__(Environment(), Context())
@@ -102,8 +117,8 @@ class MP_W_Empty(MP_WF):
         return ""
 
 
-@concrete_term
-class MP_W_Local_Assum(MP_WF):
+@concrete_Rem_term
+class Rem_W_Local_Assum(Rem_WF):
     '''
     W-Local-Assum
     ```
@@ -115,32 +130,34 @@ class MP_W_Local_Assum(MP_WF):
     ```
     '''
 
-    def __init__(self, wt : MP_WT, s_sort : MP_IsSort, x_notin_Gamma : MP_Cont_Not_Contain_Var):
-        # proof of `E[Γ] ⊢ T : s`
-        Meta_Sys_type_check(wt, MP_WT)
+    def __init__(self, wt : Rem_WT, s_sort : Rem_IsSort, x_notin_Gamma : Rem_Cont_Not_Contain_Var):
+        '''
+        Parameters -> Rule Terms:
+        - `wt` -> `E[Γ] ⊢ T : s`
+        - `s_sort` -> `s ∈ S`
+        - `x_notin_Gamma` -> `x ∉ Γ`
+        '''
 
-        # proof of `s ∈ S`
-        Meta_Sys_type_check(s_sort, MP_IsSort)
+        self.Rem_type_check(wt, Rem_WT, 'E[Γ] ⊢ T : s')
+        
+        self.Rem_type_check(s_sort, Rem_IsSort, 's ∈ S')
 
-        # proof of `x ∉ Γ`
-        Meta_Sys_type_check(x_notin_Gamma, MP_Cont_Not_Contain_Var)
+        self.Rem_type_check(x_notin_Gamma, Rem_Cont_Not_Contain_Var, 'x ∉ Γ')
 
         # consistent `s`
-        if wt.T != s_sort.s:
-            raise Meta_Sys_Error("Inconsistent sort.")
+        self.Rem_consistency_check(wt.T, s_sort.s, 's')
         
         # consistent `Γ`
-        if wt.Gamma != x_notin_Gamma.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        self.Rem_consistency_check(wt.Gamma, x_notin_Gamma.Gamma, 'Γ')
         
         self.__wt = wt
         self.__s_sort = s_sort
         self.__x_notin_Gamma = x_notin_Gamma
 
 
-        # the conclusion `WF(E)[Γ::(x:T)]`
+        # the conclusion
         new_Gamma = x_notin_Gamma.Gamma.push(
-            LocalTyping(x_notin_Gamma.var, wt.t)
+            LocalTyping(x_notin_Gamma.x, wt.t)
         )
         super().__init__(wt.E, new_Gamma)
     
@@ -150,8 +167,8 @@ class MP_W_Local_Assum(MP_WF):
         res += self.__x_notin_Gamma.conclusion() + "\n"
         return res
 
-@concrete_term
-class MP_W_Local_Def(MP_WF):
+@concrete_Rem_term
+class Rem_W_Local_Def(Rem_WF):
     '''
     W-Local-Def
     ```
@@ -162,24 +179,27 @@ class MP_W_Local_Def(MP_WF):
     ```
     '''
 
-    def __init__(self, wt : MP_WT, x_notin_Gamma : MP_Cont_Not_Contain_Var):
+    def __init__(self, wt : Rem_WT, x_notin_Gamma : Rem_Cont_Not_Contain_Var):
+        '''
+        Parameters -> Rule Terms:
+        - `wt` -> `E[Γ] ⊢ t : T`
+        - `x_notin_Gamma` -> `x ∉ Γ`
+        '''
 
-        # proof of `E[Γ] ⊢ t : T`
-        Meta_Sys_type_check(wt, MP_WT)
 
-        # proof of `x ∉ Γ`
-        Meta_Sys_type_check(x_notin_Gamma, MP_Cont_Not_Contain_Var)
+        self.Rem_type_check(wt, Rem_WT, 'E[Γ] ⊢ t : T')
+
+        self.Rem_type_check(x_notin_Gamma, Rem_Cont_Not_Contain_Var, 'x ∉ Γ')
 
         # consistent `Γ`
-        if wt.Gamma != x_notin_Gamma.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        self.Rem_consistency_check(wt.Gamma, x_notin_Gamma.Gamma, 'Γ')
 
         self.__wt = wt
         self.__x_notin_Gamma = x_notin_Gamma
 
-        # the conclusion `WF(E)[Γ::(x:=t:T)]`
+        # the conclusion
         new_Gamma = x_notin_Gamma.Gamma.push(
-            LocalDef(x_notin_Gamma.var, wt.t, wt.T)
+            LocalDef(x_notin_Gamma.x, wt.t, wt.T)
         )
         super().__init__(wt.E, new_Gamma)
 
@@ -189,8 +209,8 @@ class MP_W_Local_Def(MP_WF):
         return res
     
 
-@concrete_term
-class MP_W_Global_Assum(MP_WF):
+@concrete_Rem_term
+class Rem_W_Global_Assum(Rem_WF):
     '''
     W-Global-Assum
     ```
@@ -202,36 +222,36 @@ class MP_W_Global_Assum(MP_WF):
     ```
     '''
 
-    def __init__(self, wt : MP_WT, s_sort : MP_IsSort, c_notin_E : MP_Env_Not_Contain_Const):
+    def __init__(self, wt : Rem_WT, s_sort : Rem_IsSort, c_notin_E : Rem_Env_Not_Contain_Const):
+        '''
+        Parameters -> Rule Terms:
+        - `wt` -> `E[] ⊢ T : s`
+        - `s_sort` -> `s ∈ S`
+        - `c_notin_E` -> `c ∉ E`
+        '''
 
-        # proof of `E[] ⊢ T : s`
-        Meta_Sys_type_check(wt, MP_WT)
+        self.Rem_type_check(wt, Rem_WT, 'E[] ⊢ T : s')
 
-        # proof of `s ∈ S`
-        Meta_Sys_type_check(s_sort, MP_IsSort)
+        self.Rem_type_check(s_sort, Rem_IsSort, 's ∈ S')
 
-        # proof of `c ∉ E`
-        Meta_Sys_type_check(c_notin_E, MP_Env_Not_Contain_Const)
+        self.Rem_type_check(c_notin_E, Rem_Env_Not_Contain_Const, 'c ∉ E')
 
         # empty Gamma
-        if not wt.Gamma.is_empty:
-            raise Meta_Sys_Error("Context not empty.")
+        self.Rem_other_check(wt.Gamma.is_empty, "Context is not empty.")
 
         # consistent `s`
-        if wt.T != s_sort.s:
-            raise Meta_Sys_Error("Inconsistent sort.")
+        self.Rem_consistency_check(wt.T, s_sort.s, 's')
 
         # consistent `E`
-        if wt.E != c_notin_E.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt.E, c_notin_E, 'E')
 
         self.__wt = wt
         self.__s_sort = s_sort
         self.__c_notin_E = c_notin_E
 
-        # the conclusion `WF(E; c:T)`
+        # the conclusion
         new_E = wt.E.push(
-            GlobalTyping(c_notin_E.const, wt.T)
+            GlobalTyping(c_notin_E.c, wt.T)
         )
         super().__init__(new_E, Context())
 
@@ -241,8 +261,8 @@ class MP_W_Global_Assum(MP_WF):
         res += self.__c_notin_E.conclusion() + "\n"
         return res
     
-@concrete_term
-class MP_W_Global_Def(MP_WF):
+@concrete_Rem_term
+class Rem_W_Global_Def(Rem_WF):
     '''
     W-Global-Def
     ```
@@ -253,28 +273,29 @@ class MP_W_Global_Def(MP_WF):
     ```
     '''
 
-    def __init__(self, wt : MP_WT, c_notin_E : MP_Env_Not_Contain_Const):
+    def __init__(self, wt : Rem_WT, c_notin_E : Rem_Env_Not_Contain_Const):
+        '''
+        Parameters -> Rule Terms:
+        - `wt` -> `E[] ⊢ t : T`
+        - `c_notin_E` -> `c ∉ E`
+        '''
 
-        # proof of `E[] ⊢ t : T`
-        Meta_Sys_type_check(wt, MP_WT)
+        self.Rem_type_check(wt, Rem_WT, 'E[] ⊢ t : T')
 
-        # proof of `c ∉ E`
-        Meta_Sys_type_check(c_notin_E, MP_Env_Not_Contain_Const)
+        self.Rem_type_check(c_notin_E, Rem_Env_Not_Contain_Const, 'c ∉ E')
 
         # empty Gamma
-        if not wt.Gamma.is_empty:
-            raise Meta_Sys_Error("Context not empty.")
+        self.Rem_other_check(wt.Gamma.is_empty, "Context is not empty.")
 
         # consistent `E`
-        if wt.E != c_notin_E.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt.E, c_notin_E.E, 'E')
 
         self.__wt = wt
         self.__c_notin_E = c_notin_E
 
-        # the conclusion `WF(E; c:=t:T)`
+        # the conclusion
         new_E = wt.E.push(
-            GlobalDef(c_notin_E.const, wt.t, wt.T)
+            GlobalDef(c_notin_E.c, wt.t, wt.T)
         )
         super().__init__(new_E, Context())
 
@@ -284,8 +305,8 @@ class MP_W_Global_Def(MP_WF):
         return res
     
 
-@concrete_term
-class MP_Ax_SProp(MP_WT):
+@concrete_Rem_term
+class Rem_Ax_SProp(Rem_WT):
     '''
     Ax-SProp
     ```
@@ -295,13 +316,17 @@ class MP_Ax_SProp(MP_WT):
     ```
     '''
 
-    def __init__(self, wf : MP_WF):
+    def __init__(self, wf : Rem_WF):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_Error(wf, MP_WF)
+
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
         self.__wf = wf
 
-        # the conclusion `E[Γ] ⊢ SProp : Type(1)`
+        # the conclusion
         super().__init__(wf.E, wf.Gamma, SProp(), Type_i(1))
     
     def premises(self) -> str:
@@ -309,8 +334,8 @@ class MP_Ax_SProp(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Ax_Prop(MP_WT):
+@concrete_Rem_term
+class Rem_Ax_Prop(Rem_WT):
     '''
     Ax-Prop
     ```
@@ -320,13 +345,16 @@ class MP_Ax_Prop(MP_WT):
     ```
     '''
 
-    def __init__(self, wf : MP_WF):
+    def __init__(self, wf : Rem_WF):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_Error(wf, MP_WF)
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
         self.__wf = wf
 
-        # the conclusion `E[Γ] ⊢ Prop : Type(1)`
+        # the conclusion
         super().__init__(wf.E, wf.Gamma, Prop(), Type_i(1))
     
     def premises(self) -> str:
@@ -334,8 +362,8 @@ class MP_Ax_Prop(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Ax_Set(MP_WT):
+@concrete_Rem_term
+class Rem_Ax_Set(Rem_WT):
     '''
     Ax-Set
     ```
@@ -345,13 +373,16 @@ class MP_Ax_Set(MP_WT):
     ```
     '''
 
-    def __init__(self, wf : MP_WF):
+    def __init__(self, wf : Rem_WF):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_Error(wf, MP_WF)
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
         self.__wf = wf
 
-        # the conclusion `E[Γ] ⊢ Set : Type(1)`
+        # the conclusion
         super().__init__(wf.E, wf.Gamma, Set(), Type_i(1))
     
     def premises(self) -> str:
@@ -359,8 +390,8 @@ class MP_Ax_Set(MP_WT):
         return res
 
 
-@concrete_term
-class MP_Ax_Type(MP_WT):
+@concrete_Rem_term
+class Rem_Ax_Type(Rem_WT):
     '''
     Ax-Type
     ```
@@ -370,17 +401,22 @@ class MP_Ax_Type(MP_WT):
     ```
     '''
 
-    def __init__(self, wf : MP_WF, i : int):
+    def __init__(self, wf : Rem_WF, i : int):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        - `i` -> `i`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_Error(wf, MP_WF)
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
 
         # a python number `i`
-        Meta_Sys_Error(i, int)
+        self.Rem_type_check(i, int, 'i')
+
         self.__wf = wf
         self.__i = i
 
-        # the conclusion `E[Γ] ⊢ Type(i) : Type(i + 1)`
+        # the conclusion
         super().__init__(wf.E, wf.Gamma, Type_i(i), Type_i(i+1))
     
     def premises(self) -> str:
@@ -388,8 +424,8 @@ class MP_Ax_Type(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Var(MP_WT):
+@concrete_Rem_term
+class Rem_Var(Rem_WT):
     '''
     Var
     ```
@@ -400,23 +436,25 @@ class MP_Var(MP_WT):
     ```
     '''
 
-    def __init__(self, wf : MP_WF, x_dec_in_Gamma : MP_Cont_Contain_Typing):
+    def __init__(self, wf : Rem_WF, x_dec_in_Gamma : Rem_Cont_Contain_Typing):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        - `x_dec_in_Gamma` -> `(x : T) ∈ Γ or (x:=t : T) ∈ Γ`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_type_check(wf, MP_WF)
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
 
-        # proo of `(x : T) ∈ Γ` or `(x:=t : T) ∈ Γ`
-        Meta_Sys_type_check(x_dec_in_Gamma, MP_Cont_Contain_Typing)
+        self.Rem_type_check(x_dec_in_Gamma, Rem_Cont_Contain_Typing, '(x : T) ∈ Γ or (x:=t : T) ∈ Γ')
 
         # consistent `Γ`
-        if wf.Gamma != x_dec_in_Gamma.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        self.Rem_consistency_check(wf.Gamma, x_dec_in_Gamma.Gamma, 'Γ')
         
         self.__wf = wf
         self.__x_dec_in_Gamma = x_dec_in_Gamma
 
-        # the conclusion `E[Γ] ⊢ x:T`
-        super().__init__(wf.E, wf.Gamma, x_dec_in_Gamma.var_typing.x, x_dec_in_Gamma.var_typing.T)
+        # the conclusion
+        super().__init__(wf.E, wf.Gamma, x_dec_in_Gamma.x_typing.x, x_dec_in_Gamma.x_typing.T)
 
 
     def premises(self) -> str:
@@ -425,8 +463,8 @@ class MP_Var(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Const(MP_WT):
+@concrete_Rem_term
+class Rem_Const(Rem_WT):
     '''
     Const
     ```
@@ -437,23 +475,25 @@ class MP_Const(MP_WT):
     ```
     '''
 
-    def __init__(self, wf : MP_WF, c_dec_in_E : MP_Env_Contain_Typing):
+    def __init__(self, wf : Rem_WF, c_dec_in_E : Rem_Env_Contain_Typing):
+        '''
+        Parameters -> Rule Terms:
+        - `wf` -> `WF(E)[Γ]`
+        - `c_dec_in_E` -> `(c : T) ∈ E or (c:=t : T) ∈ E`
+        '''
 
-        # proof of `WF(E)[Γ]`
-        Meta_Sys_type_check(wf, MP_WF)
+        self.Rem_type_check(wf, Rem_WF, 'WF(E)[Γ]')
 
-        # proo of `(c : T) ∈ E` or `(c:=t : T) ∈ E`
-        Meta_Sys_type_check(c_dec_in_E, MP_Env_Contain_Typing)
+        self.Rem_type_check(c_dec_in_E, Rem_Env_Contain_Typing, '(c : T) ∈ E or (c:=t : T) ∈ E')
 
         # consistent `E`
-        if wf.E != c_dec_in_E.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wf.E, c_dec_in_E.E, "E")
         
         self.__wf = wf
         self.__c_dec_in_E = c_dec_in_E
 
-        # the conclusion `E[Γ] ⊢ c:T`
-        super().__init__(wf.E, wf.Gamma, c_dec_in_E.const_typing.c, c_dec_in_E.const_typing.T)
+        # the conclusion
+        super().__init__(wf.E, wf.Gamma, c_dec_in_E.c_typing.c, c_dec_in_E.c_typing.T)
 
 
     def premises(self) -> str:
@@ -462,8 +502,8 @@ class MP_Const(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Prod_SProp(MP_WT):
+@concrete_Rem_term
+class Rem_Prod_SProp(Rem_WT):
     '''
     Prod-SProp
     ```
@@ -475,45 +515,43 @@ class MP_Prod_SProp(MP_WT):
     ```
     '''
 
-    def __init__(self, wt_outer : MP_WT, s_sort : MP_IsSort, wt_inner : MP_WT):
+    def __init__(self, wt_outer : Rem_WT, s_sort : Rem_IsSort, wt_inner : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_outer` -> `E[Γ] ⊢ T : s`
+        - `s_sort` -> `s ∈ S`
+        - `wt_inner` -> `E[Γ::(x:T)] ⊢ U : SProp`
+        '''
 
-        # proof of `E[Γ] ⊢ T : s`
-        Meta_Sys_type_check(wt_outer, MP_WT)
+        self.Rem_type_check(wt_outer, Rem_WT, 'E[Γ] ⊢ T : s')
 
-        # proof of `s ∈ S`
-        Meta_Sys_type_check(s_sort, MP_IsSort)
+        self.Rem_type_check(s_sort, Rem_IsSort, 's ∈ S')
 
-        # proof of `E[Γ::(x:T)] ⊢ U : SProp`
-        Meta_Sys_type_check(wt_inner, MP_WT)
+        self.Rem_type_check(wt_inner, Rem_WT, 'E[Γ::(x:T)] ⊢ U : SProp')
 
         # consistent `s`
-        if wt_outer.T != s_sort.s:
-            raise Meta_Sys_Error("Inconsistent sort.")
+        self.Rem_consistency_check(wt_outer.T, s_sort.s, 's')
         
         # consistent `E`
-        if wt_outer.E != wt_inner.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt_outer.E, wt_inner.E, 'E')
         
         # break `Γ::(x:T)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
 
         # consistent `Gamma`
-        if wt_outer.Gamma != Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
-        
+        self.Rem_consistency_check(wt_outer.Gamma, Gamma_pre, "Γ")
+
         # consistent `T`
-        if wt_outer.t != dec.T:
-            raise Meta_Sys_Error("Inconssitent 'T'.")
+        self.Rem_consistency_check(wt_outer.t, dec.T, "T")
         
-        # proof of `U : SProp`
-        if wt_inner.T != SProp():
-            raise Meta_Sys_Error("Invalid product.")
+        # consisten `SProp`
+        self.Rem_consistency_check(wt_inner.T, SProp(), 'SProp')
         
         self.__wt_outer = wt_outer
         self.__s_sort = s_sort
         self.__wt_inner = wt_inner
 
-        # the conclusion `E[Γ] ⊢ ∀x:T, U : SProp`
+        # the conclusion
         prod = Prod(dec.x, dec.T, wt_inner.t)
         super().__init__(wt_outer.E, wt_outer.Gamma, prod, SProp())
 
@@ -524,8 +562,8 @@ class MP_Prod_SProp(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Prod_Prop(MP_WT):
+@concrete_Rem_term
+class Rem_Prod_Prop(Rem_WT):
     '''
     Prod-Prop
     ```
@@ -537,45 +575,43 @@ class MP_Prod_Prop(MP_WT):
     ```
     '''
 
-    def __init__(self, wt_outer : MP_WT, s_sort : MP_IsSort, wt_inner : MP_WT):
+    def __init__(self, wt_outer : Rem_WT, s_sort : Rem_IsSort, wt_inner : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_outer` -> `E[Γ] ⊢ T : s`
+        - `s_sort` -> `s ∈ S`
+        - `wt_inner` -> `E[Γ::(x:T)] ⊢ U : Prop`
+        '''
+        
+        self.Rem_type_check(wt_outer, Rem_WT, 'E[Γ] ⊢ T : s')
 
-        # proof of `E[Γ] ⊢ T : s`
-        Meta_Sys_type_check(wt_outer, MP_WT)
+        self.Rem_type_check(s_sort, Rem_IsSort, 's ∈ S')
 
-        # proof of `s ∈ S`
-        Meta_Sys_type_check(s_sort, MP_IsSort)
-
-        # proof of `E[Γ::(x:T)] ⊢ U : Prop`
-        Meta_Sys_type_check(wt_inner, MP_WT)
+        self.Rem_type_check(wt_inner, Rem_WT, 'E[Γ::(x:T)] ⊢ U : Prop')
 
         # consistent `s`
-        if wt_outer.T != s_sort.s:
-            raise Meta_Sys_Error("Inconsistent sort.")
+        self.Rem_consistency_check(wt_outer.T, s_sort.s, 's')
         
         # consistent `E`
-        if wt_outer.E != wt_inner.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt_outer.E, wt_inner.E, 'E')
 
         # break `Γ::(x:T)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
 
-        # consistent `Gamma`
-        if wt_outer.Gamma != Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(wt_outer.Gamma, Gamma_pre, 'Γ')
         
         # consistent `T`
-        if wt_outer.t != dec.T:
-            raise Meta_Sys_Error("Inconssitent 'T'.")
+        self.Rem_consistency_check(wt_outer.t, dec.T, 'T')
         
-        # proof of `U : Prop`
-        if wt_inner.T != Prop():
-            raise Meta_Sys_Error("Invalid product.")
+        # consistent `Prop`
+        self.Rem_consistency_check(wt_inner.T, Prop(), 'Prop')
         
         self.__wt_outer = wt_outer
         self.__s_sort = s_sort
         self.__wt_inner = wt_inner
 
-        # the conclusion `E[Γ] ⊢ ∀x:T, U : Prop`
+        # the conclusion
         prod = Prod(dec.x, dec.T, wt_inner.t)
         super().__init__(wt_outer.E, wt_outer.Gamma, prod, Prop())
 
@@ -586,8 +622,8 @@ class MP_Prod_Prop(MP_WT):
         return res
     
     
-@concrete_term
-class MP_Prod_Set(MP_WT):
+@concrete_Rem_term
+class Rem_Prod_Set(Rem_WT):
     '''
     Prod-Set
     ```
@@ -599,48 +635,47 @@ class MP_Prod_Set(MP_WT):
     ```
     '''
 
-    def __init__(self, wt_outer : MP_WT, s_sort : MP_IsSort, wt_inner : MP_WT):
+    def __init__(self, wt_outer : Rem_WT, s_sort : Rem_IsSort, wt_inner : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_outer` -> `E[Γ] ⊢ T : s`
+        - `s_sort` -> `s ∈ {SProp, Prop, Set}`
+        - `wt_inner` -> `E[Γ::(x:T)] ⊢ U : Set`
+        '''
+        
+        self.Rem_type_check(wt_outer, Rem_WT, 'E[Γ] ⊢ T : s')
 
-        # proof of `E[Γ] ⊢ T : s`
-        Meta_Sys_type_check(wt_outer, MP_WT)
-
-        # proof of `s ∈ {SProp, Prop, Set}`
-        Meta_Sys_type_check(s_sort, MP_IsSort)
-        if not (isinstance(s_sort.s, SProp) or isinstance(s_sort.s, Prop) or isinstance(s_sort.s, Set)):
-            raise Meta_Sys_Error("Not satisfied: 's ∈ {SProp, Prop, Set}'.")
+        self.Rem_other_check(
+            (isinstance(s_sort.s, SProp) or isinstance(s_sort.s, Prop) or isinstance(s_sort.s, Set)), 
+            "'s ∈ {SProp, Prop, Set}' not satisfied."
+        )
 
 
-        # proof of `E[Γ::(x:T)] ⊢ U : Set`
-        Meta_Sys_type_check(wt_inner, MP_WT)
+        self.Rem_type_check(wt_inner, Rem_WT, 'E[Γ::(x:T)] ⊢ U : Set')
 
         # consistent `s`
-        if wt_outer.T != s_sort.s:
-            raise Meta_Sys_Error("Inconsistent sort.")
+        self.Rem_consistency_check(wt_outer.T, s_sort.s, 's')
         
         # consistent `E`
-        if wt_outer.E != wt_inner.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt_outer.E, wt_inner.E, 'E')
 
         # break `Γ::(x:T)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
 
-        # consistent `Gamma`
-        if wt_outer.Gamma != Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(wt_outer.Gamma, Gamma_pre, 'Γ')
         
         # consistent `T`
-        if wt_outer.t != dec.T:
-            raise Meta_Sys_Error("Inconssitent 'T'.")
+        self.Rem_consistency_check(wt_outer.t, dec.T, 'T')
         
-        # proof of `U : Set`
-        if wt_inner.T != Set():
-            raise Meta_Sys_Error("Invalid product.")
+        # consistent `Set`
+        self.Rem_consistency_check(wt_inner.T, Set(), 'Set')
         
         self.__wt_outer = wt_outer
         self.__s_sort = s_sort
         self.__wt_inner = wt_inner
 
-        # the conclusion `E[Γ] ⊢ ∀x:T, U : Set`
+        # the conclusion
         prod = Prod(dec.x, dec.T, wt_inner.t)
         super().__init__(wt_outer.E, wt_outer.Gamma, prod, Set())
 
@@ -651,8 +686,8 @@ class MP_Prod_Set(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Prod_Type(MP_WT):
+@concrete_Rem_term
+class Rem_Prod_Type(Rem_WT):
     '''
     Prod-Type
     ```
@@ -664,48 +699,47 @@ class MP_Prod_Type(MP_WT):
     ```
     '''
 
-    def __init__(self, wt_outer : MP_WT, s_sort : MP_IsSort, wt_inner : MP_WT):
+    def __init__(self, wt_outer : Rem_WT, s_sort : Rem_IsSort, wt_inner : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_outer` -> `E[Γ] ⊢ T : s`
+        - `s_sort` -> `s ∈ {SProp, Type(i)}`
+        - `wt_inner` -> `E[Γ::(x:T)] ⊢ U : Type(i)`
+        '''
 
-        # proof of `E[Γ] ⊢ T : s`
-        Meta_Sys_type_check(wt_outer, MP_WT)
+        self.Rem_type_check(wt_outer, Rem_WT, 'E[Γ] ⊢ T : s')
 
-        # proof of `s ∈ {SProp, Type(i)}`
-        Meta_Sys_type_check(s_sort, MP_IsSort)
-        if not (isinstance(s_sort.s, SProp) or isinstance(s_sort.s, Type)):
-            raise Meta_Sys_Error("Not satisfied: 's ∈ {SProp, Type(i)}'.")
+        self.Rem_other_check(
+            (isinstance(s_sort.s, SProp) or isinstance(s_sort.s, Type)),
+            "'s ∈ {SProp, Type(i)}' not satisfied."
+        )
 
 
-        # proof of `E[Γ::(x:T)] ⊢ U : Type(i)`
-        Meta_Sys_type_check(wt_inner, MP_WT)
+        self.Rem_type_check(wt_inner, Rem_WT, 'E[Γ::(x:T)] ⊢ U : Type(i)')
 
         # consistent `s`
-        if wt_outer.T != s_sort.s:
-            raise Meta_Sys_Error("Inconsistent sort.")
+        self.Rem_consistency_check(wt_outer.T, s_sort.s, 's')
         
         # consistent `E`
-        if wt_outer.E != wt_inner.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt_outer.E, wt_inner.E, 'E')
 
         # break `Γ::(x:T)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
 
-        # consistent `Gamma`
-        if wt_outer.Gamma != Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        # consistent `Γ`
+        self.Rem_consistency_check(wt_outer.Gamma, Gamma_pre, 'Γ')
         
         # consistent `T`
-        if wt_outer.t != dec.T:
-            raise Meta_Sys_Error("Inconssitent 'T'.")
+        self.Rem_consistency_check(wt_outer.t, dec.T, 'T')
         
-        # proof of `U : Type(i)`
-        if not isinstance(wt_inner.T, Type_i):
-            raise Meta_Sys_Error("Invalid product.")
+        # consistent `Type(i)`
+        self.Rem_type_check(wt_inner.T, Type_i, 'Type(i)')
         
         self.__wt_outer = wt_outer
         self.__s_sort = s_sort
         self.__wt_inner = wt_inner
 
-        # the conclusion `E[Γ] ⊢ ∀x:T, U : Type(i)`
+        # the conclusion
         prod = Prod(dec.x, dec.T, wt_inner.t)
         super().__init__(wt_outer.E, wt_outer.Gamma, prod, wt_inner.T)
 
@@ -716,8 +750,8 @@ class MP_Prod_Type(MP_WT):
         return res
     
     
-@concrete_term
-class MP_Lam(MP_WT):
+@concrete_Rem_term
+class Rem_Lam(Rem_WT):
     '''
     Lam
     ```
@@ -728,45 +762,42 @@ class MP_Lam(MP_WT):
     ```
     '''
 
-    def __init__(self, wt_outer : MP_WT, wt_inner : MP_WT):
+    def __init__(self, wt_outer : Rem_WT, wt_inner : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_outer` -> `E[Γ] ⊢ ∀x:T, U : s`
+        - `wt_inner` -> `E[Γ::(x:T)] ⊢ t : U`
+        '''
 
-        # proof of `E[Γ] ⊢ ∀x:T, U : s`
-        Meta_Sys_type_check(wt_outer, MP_WT)
+        self.Rem_type_check(wt_outer, Rem_WT, 'E[Γ] ⊢ ∀x:T, U : s')
 
-        # proof of `E[Γ::(x:T)] ⊢ t : U`
-        Meta_Sys_type_check(wt_inner, MP_WT)
+        self.Rem_type_check(wt_inner, Rem_WT, 'E[Γ::(x:T)] ⊢ t : U')
 
-        # extact `∀x:T, U`
-        if not isinstance(wt_outer.t, Prod):
-            raise Meta_Sys_Error("Type is not product.")
+        self.Rem_type_check(wt_outer.t, Prod, '∀x:T, U')
+        assert isinstance(wt_outer.t, Prod)
         
         # break `Γ::(x:T)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
 
         # consistent `E`
-        if wt_outer.E != wt_inner.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt_outer.E, wt_inner.E, 'E')
 
         # consistent `Γ`
-        if wt_outer.Gamma != Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        self.Rem_consistency_check(wt_outer.Gamma, Gamma_pre, 'Γ')
     
         # consistent `x`
-        if wt_outer.t.x != dec.x:
-            raise Meta_Sys_Error("Inconsistent 'x'.")
+        self.Rem_consistency_check(wt_outer.t.x, dec.x, 'x')
         
         # consistent `T`
-        if wt_outer.t.T != dec.T:
-            raise Meta_Sys_Error("Inconsistent 'T'.")
+        self.Rem_consistency_check(wt_outer.t.T, dec.T, 'T')
         
         # consistent `U`
-        if wt_outer.t.U != wt_inner.T:
-            raise Meta_Sys_Error("Inconsistent 'U'.")
+        self.Rem_consistency_check(wt_outer.t.U, wt_inner.T, 'U')
         
         self.__wt_outer = wt_outer
         self.__wt_inner = wt_inner
 
-        # the conclusion `E[Γ] ⊢ λx:T.t : ∀x:T, U`
+        # the conclusion
         lam = Abstract(dec.x, dec.T, wt_inner.t)
         prod = Prod(dec.x, dec.T, wt_inner.T)
         super().__init__(wt_outer.E, wt_outer.Gamma, lam, prod)
@@ -777,8 +808,8 @@ class MP_Lam(MP_WT):
         return res
     
 
-@concrete_term
-class MP_App(MP_WT):
+@concrete_Rem_term
+class Rem_App(Rem_WT):
     '''
     App
     ```
@@ -789,34 +820,34 @@ class MP_App(MP_WT):
     ```
     '''
 
-    def __init__(self, wt_t : MP_WT, wt_u : MP_WT):
+    def __init__(self, wt_t : Rem_WT, wt_u : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_t` -> `E[Γ] ⊢ t: ∀x:U, T`
+        - `wt_u` -> `E[Γ] ⊢ u : U`
+        '''
 
-        # proof of `E[Γ] ⊢ t: ∀x:U, T`
-        Meta_Sys_type_check(wt_t, MP_WT)
+        self.Rem_type_check(wt_t, Rem_WT, 'E[Γ] ⊢ t: ∀x:U, T')
 
-        # proof of `E[Γ] ⊢ u : U`
-        Meta_Sys_type_check(wt_u, MP_WT)
+        self.Rem_type_check(wt_u, Rem_WT, 'E[Γ] ⊢ u : U')
 
         # extact `∀x:U, T`
-        if not isinstance(wt_t.T, Prod):
-            raise Meta_Sys_Error("Invalid 't' type.")
+        self.Rem_type_check(wt_t.T, Prod, '∀x:U, T')
+        assert isinstance(wt_t.T, Prod)
         
         # consistent `E`
-        if wt_t.E != wt_u.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt_t.E, wt_u.E, 'E')
 
         # consistent `Γ`
-        if wt_t.Gamma != wt_u.Gamma:
-            raise Meta_Sys_Error("Inconsistent context.")
+        self.Rem_consistency_check(wt_t.Gamma, wt_u.Gamma, 'Γ')
         
         # consistent `U`
-        if wt_t.T.T != wt_u.T:
-            raise Meta_Sys_Error("Inconsistent 'U'.")
+        self.Rem_consistency_check(wt_t.T.T, wt_u.T, 'U')
         
         self.__wt_t = wt_t
         self.__wt_u = wt_u
 
-        # the conclusion `E[Γ] ⊢ (t u) : T{x/u}`
+        # the conclusion
         app = Apply(wt_t.t, wt_u.t)
         T_sub = wt_t.T.U.substitute(wt_t.T.x, wt_u.t)
         super().__init__(wt_t.E, wt_t.Gamma, app, T_sub)
@@ -827,8 +858,8 @@ class MP_App(MP_WT):
         return res
     
 
-@concrete_term
-class MP_Let(MP_WT):
+@concrete_Rem_term
+class Rem_Let(Rem_WT):
     '''
     Let
     ```
@@ -839,40 +870,39 @@ class MP_Let(MP_WT):
     ```
     '''
 
-    def __init__(self, wt_outer : MP_WT, wt_inner : MP_WT):
+    def __init__(self, wt_outer : Rem_WT, wt_inner : Rem_WT):
+        '''
+        Parameters -> Rule Terms:
+        - `wt_outer` -> `E[Γ] ⊢ t : T`
+        - `wt_inner` -> `E[Γ::(x:=t:T)] ⊢ u : U`
+        '''
 
-        # proof of `E[Γ] ⊢ t : T`
-        Meta_Sys_type_check(wt_outer, MP_WT)
+        self.Rem_type_check(wt_outer, Rem_WT, 'E[Γ] ⊢ t : T')
 
-        # proof of `E[Γ::(x:=t:T)] ⊢ u : U`
-        Meta_Sys_type_check(wt_inner, MP_WT)
+        self.Rem_type_check(wt_inner, Rem_WT, 'E[Γ::(x:=t:T)] ⊢ u : U')
 
         
         # break `Γ::(x:=t:T)`
         Gamma_pre, dec = wt_inner.Gamma.pop()
-        if not isinstance(dec, LocalDef):
-            raise Meta_Sys_Error("Invalid context.")
+        self.Rem_type_check(dec, LocalDef, 'x:=t:T')
+        assert isinstance(dec, LocalDef)
 
         # consistent `E`
-        if wt_outer.E != wt_inner.E:
-            raise Meta_Sys_Error("Inconsistent environment.")
+        self.Rem_consistency_check(wt_outer.E, wt_inner.E, 'E')
 
         # consistent `Γ`
-        if wt_outer.Gamma != Gamma_pre:
-            raise Meta_Sys_Error("Inconsistent context.")
+        self.Rem_consistency_check(wt_outer.Gamma, Gamma_pre, 'Γ')
 
         # consistent `t`
-        if dec.t != wt_outer.t:
-            raise Meta_Sys_Error("Inconsistent 't'.")
+        self.Rem_consistency_check(dec.t, wt_outer.t, 't')
 
         # consistent `T`
-        if wt_outer.T != dec.T:
-            raise Meta_Sys_Error("Inconsistent 'T'.")
+        self.Rem_consistency_check(wt_outer.T, dec.T, 'T')
         
         self.__wt_outer = wt_outer
         self.__wt_inner = wt_inner
 
-        # the conclusion `E[Γ] ⊢ let x:=t:T in u : U{x/t}`
+        # the conclusion
         let_in = Let_in(dec.x, dec.t, dec.T, wt_inner.t)
         U_sub = wt_inner.T.substitute(dec.x, dec.t)
         super().__init__(wt_outer.E, wt_outer.Gamma, let_in, U_sub)

@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from typing import Dict, Type, List, Tuple
 
-from ..metadef import *
+from ..rem import *
 
 
 #############################################################
 # The definition for terms
 
-@meta_term
-class Term(MetaTerm):
+@Rem_term
+class Term(RemTerm):
     '''
     term
     ```
@@ -63,7 +63,7 @@ class Term(MetaTerm):
 # The Sorts.
 ####
 
-@meta_term
+@Rem_term
 class Sort(Term):
     '''
     sort
@@ -90,7 +90,7 @@ class Sort(Term):
         return False
 
 
-@concrete_term
+@concrete_Rem_term
 class SProp(Sort):
     '''
     term-SProp
@@ -102,7 +102,7 @@ class SProp(Sort):
     def __str__(self) -> str:
         return "SProp"
 
-@concrete_term
+@concrete_Rem_term
 class Prop(Sort):
     '''
     term-Prop
@@ -114,7 +114,7 @@ class Prop(Sort):
     def __str__(self) -> str:
         return "Prop"
 
-@concrete_term
+@concrete_Rem_term
 class Set(Sort):
     '''
     term-Set
@@ -126,7 +126,7 @@ class Set(Sort):
     def __str__(self) -> str:
         return "Set"
         
-@concrete_term
+@concrete_Rem_term
 class Type_i(Sort):
     '''
     term-Type
@@ -136,9 +136,8 @@ class Type_i(Sort):
     '''
 
     def __init__(self, i : int):
-        Meta_Sys_type_check(i, int)
-        if i <= 0:
-            raise Meta_Sys_Error("Invalid universe number.")
+        self.Rem_type_check(i, int, 'i')
+        self.Rem_other_check(0 < i, f"Invalid universe number {i}.")
         self.__i = i
 
     @property
@@ -159,7 +158,7 @@ class Type_i(Sort):
 # Other term constructions.
 ###
 
-@concrete_term
+@concrete_Rem_term
 class Var(Term):
     '''
     term-Var
@@ -168,28 +167,32 @@ class Var(Term):
     ```
     '''
 
-    def __init__(self, name : str):
-        Meta_Sys_type_check(name, str)
-        self.__name = name
+    def __init__(self, x : str):
+        '''
+        Parameters -> Rule Terms:
+        - `x` -> `x`
+        '''
+        self.Rem_type_check(x, str, "x")
+        self.__x = x
 
     def __hash__(self) -> int:
-        return self.__name.__hash__()
+        return self.__x.__hash__()
     
     @property
-    def name(self) -> str:
-        return self.__name
+    def x(self) -> str:
+        return self.__x
     
     def __eq__(self, other: Term) -> bool:
         if not isinstance(other, Var):
             return False
         
-        return self.name == other.name
+        return self.x == other.x
 
     def alpha_convertible(self, other: Term) -> bool:
         return self == other
 
     def __str__(self) -> str:
-        return self.name
+        return self.x
     
     def all_var(self) -> set[Var]:
         return {self}
@@ -213,14 +216,14 @@ class Var(Term):
         for term in terms:
             var_set.update(term.all_var())
 
-        name = f"#{Var.count}"
-        while Var(name) in var_set:
+        x = f"#{Var.count}"
+        while Var(x) in var_set:
             Var.count += 1
-            name = f"#{Var.count}"
+            x = f"#{Var.count}"
 
-        return Var(name)
+        return Var(x)
     
-@concrete_term
+@concrete_Rem_term
 class Const(Term):
     '''
     term-Const
@@ -229,28 +232,32 @@ class Const(Term):
     ```
     '''
 
-    def __init__(self, name : str):
-        Meta_Sys_type_check(name, str)
-        self.__name = name
+    def __init__(self, c : str):
+        '''
+        Parameters -> Rule Terms:
+        - `c` -> `c`
+        '''
+        self.Rem_type_check(c, str, 'c')
+        self.__c = c
 
     def __hash__(self) -> int:
-        return self.__name.__hash__()
+        return self.__c.__hash__()
     
     @property
-    def name(self) -> str:
-        return self.__name
+    def c(self) -> str:
+        return self.__c
     
     def __eq__(self, other: Term) -> bool:
         if not isinstance(other, Const):
             return False
         
-        return self.name == other.name
+        return self.c == other.c
     
     def alpha_convertible(self, other: Term) -> bool:
         return self == other
 
     def __str__(self) -> str:
-        return self.name
+        return self.c
     
     def all_var(self) -> set[Var]:
         return set()
@@ -265,7 +272,7 @@ class Const(Term):
 # Terms that contain a bound variable.
 ###
 
-@meta_term
+@Rem_term
 class BoundTerm(Term):
     '''
     term-bound
@@ -276,7 +283,7 @@ class BoundTerm(Term):
 
     def __init__(self, x : Var):
         # the bound variable
-        Meta_Sys_type_check(x, Var)
+        self.Rem_type_check(x, Var, 'x')
         self.__x = x
 
     @property
@@ -290,7 +297,7 @@ class BoundTerm(Term):
         '''
         raise NotImplementedError()
 
-@concrete_term
+@concrete_Rem_term
 class Prod(BoundTerm):
     '''
     term-prod
@@ -300,10 +307,16 @@ class Prod(BoundTerm):
     '''
 
     def __init__(self, x : Var, T : Term, U : Term):
+        '''
+        Parameters -> Rule Terms:
+        - `x` -> `x`
+        - `T` -> `T`
+        - `U` -> `U`
+        '''
         super().__init__(x)
-        Meta_Sys_type_check(T, Term)
+        self.Rem_type_check(T, Term, 'T')
         self.__T = T
-        Meta_Sys_type_check(U, Term)
+        self.Rem_type_check(U, Term, 'U')
         self.__U = U
 
     
@@ -366,13 +379,10 @@ class Prod(BoundTerm):
             return self
         
     def replace_bound(self, var : Var) -> Prod:
-        # security check. necessary?
-        # if var in self.free_var():
-        #     raise Meta_Sys_Error(f"Invalid bound replacement: variable '{var}' is free in '{self}'.")
         
         return Prod(var, self.T.substitute(self.x, var), self.U.substitute(self.x, var))
         
-@concrete_term
+@concrete_Rem_term
 class Abstract(BoundTerm):
     '''
     term-lambda
@@ -382,10 +392,16 @@ class Abstract(BoundTerm):
     '''
 
     def __init__(self, x : Var, T : Term, u : Term):
+        '''
+        Parameters -> Rule Terms:
+        - `x` -> `x`
+        - `T` -> `T`
+        - `u` -> `u`
+        '''
         super().__init__(x)
-        Meta_Sys_type_check(T, Term)
+        self.Rem_type_check(T, Term, 'T')
         self.__T = T
-        Meta_Sys_type_check(u, Term)
+        self.Rem_type_check(u, Term, 'u')
         self.__u = u
     
     @property
@@ -440,7 +456,7 @@ class Abstract(BoundTerm):
         
 
 
-@concrete_term
+@concrete_Rem_term
 class Apply(Term):
     '''
     term-apply
@@ -450,9 +466,14 @@ class Apply(Term):
     '''
 
     def __init__(self, t : Term, u : Term):
-        Meta_Sys_type_check(t, Term)
+        '''
+        Parameters -> Rule Terms:
+        - `t` -> `t`
+        - `u` -> `u`
+        '''
+        self.Rem_type_check(t, Term, 't')
         self.__t = t
-        Meta_Sys_type_check(u, Term)
+        self.Rem_type_check(u, Term, 'u')
         self.__u = u
 
     @property
@@ -489,7 +510,7 @@ class Apply(Term):
         return Apply(self.t.substitute(x, t), self.u.substitute(x, t))
     
 
-@concrete_term
+@concrete_Rem_term
 class Let_in(BoundTerm):
     '''
     term-let-in
@@ -499,12 +520,19 @@ class Let_in(BoundTerm):
     '''
 
     def __init__(self, x : Var, t : Term, T : Term, u : Term):
+        '''
+        Parameters -> Rule Terms:
+        - `x` -> `x`
+        - `t` -> `t`
+        - `T` -> `T`
+        - `u` -> `u`
+        '''
         super().__init__(x)
-        Meta_Sys_type_check(t, Term)
+        self.Rem_type_check(t, Term, 't')
         self.__t = t
-        Meta_Sys_type_check(T, Term)
+        self.Rem_type_check(T, Term, 't')
         self.__T = T
-        Meta_Sys_type_check(u, Term)
+        self.Rem_type_check(u, Term, 't')
         self.__u = u
 
     @property
@@ -562,11 +590,11 @@ class Let_in(BoundTerm):
 
 
 #####################################################################
-# Meta proof objects
+# Rem proof objects
 ###
 
-@concrete_term
-class MP_IsSort(MetaProof):
+@concrete_Rem_term
+class Rem_IsSort(RemProof):
     '''
     is-sort
     ```
@@ -576,15 +604,16 @@ class MP_IsSort(MetaProof):
     The proof for `s ∈ S`.
     '''
 
-    def __init__(self, s : Term):
-        Meta_Sys_type_check(s, Term)
+    def __init__(self, s : Sort):
+        '''
+        Parameters -> Rule Terms:
+        - `s` -> `s`
+        '''
+        self.Rem_type_check(s, Sort, 's')
         self.__s = s
 
-        if not isinstance(s, Sort):
-            raise Meta_Sys_Error(f"The term '{self.__s}' is not a sort.")
-        
     @property
-    def s(self) -> Term:
+    def s(self) -> Sort:
         return self.__s
     
     def premises(self) -> str:

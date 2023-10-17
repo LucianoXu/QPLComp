@@ -6,4 +6,4 @@ from .coc import *
 
 
 # check the system
-meta_system_check(globals(), __file__)
+Rem_system_check(globals(), __file__)

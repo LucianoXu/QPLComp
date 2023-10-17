@@ -7,15 +7,15 @@ See (https://coq.inria.fr/refman/language/cic.html#global-environment).
 from __future__ import annotations
 
 from .term import *
-from ..metadef import MetaProof
+from ..rem import RemProof
 
 
 ##############################################################
 # Global Environment
 ###
 
-@meta_term
-class GlobalDec(MetaTerm):
+@Rem_term
+class GlobalDec(RemTerm):
     '''
     global-dec
     ```
@@ -29,9 +29,14 @@ class GlobalDec(MetaTerm):
         raise NotImplementedError()
     
     def __init__(self, c : Const, T : Term):
-        Meta_Sys_type_check(c, Const)
+        '''
+        Parameters -> Rule Terms:
+        - `c` -> `c`
+        - `T` -> `T`
+        '''
+        self.Rem_type_check(c, Const, 'c')
         self.__c = c
-        Meta_Sys_type_check(T, Term)
+        self.Rem_type_check(T, Term, 'T')
         self.__T = T
 
     @property
@@ -42,7 +47,7 @@ class GlobalDec(MetaTerm):
     def T(self) -> Term:
         return self.__T
 
-@concrete_term
+@concrete_Rem_term
 class GlobalTyping(GlobalDec):
     '''
     global-assum
@@ -59,7 +64,7 @@ class GlobalTyping(GlobalDec):
     def __str__(self) -> str:
         return f"({self.c} : {self.T})"
 
-@concrete_term
+@concrete_Rem_term
 class GlobalDef(GlobalDec):
     '''
     global-def
@@ -69,8 +74,14 @@ class GlobalDef(GlobalDec):
     '''
 
     def __init__(self, c : Const, t : Term, T : Term):
+        '''
+        Parameters -> Rule Terms:
+        - `c` -> `c`
+        - `t` -> `t`
+        - `T` -> `T`
+        '''
         super().__init__(c, T)
-        Meta_Sys_type_check(t, Term)
+        self.Rem_type_check(t, Term, 't')
         self.__t = t
 
     @property
@@ -86,8 +97,8 @@ class GlobalDef(GlobalDec):
         return f"({self.c} := {self.t} : {self.T})"
     
 
-@concrete_term
-class Environment(MetaTerm):
+@concrete_Rem_term
+class Environment(RemTerm):
     '''
     global-environment
     ```
@@ -96,7 +107,7 @@ class Environment(MetaTerm):
     '''
 
     def __init__(self, ls : Tuple[GlobalDec, ...] = ()):
-        Meta_Sys_type_check(ls, tuple)
+        self.Rem_type_check(ls, tuple, 'ls')
         self.__ls = ls
 
     @property
@@ -132,30 +143,34 @@ class Environment(MetaTerm):
         return Environment(self.__ls + (dec,))
     
 
-@concrete_term
-class MP_Env_Not_Contain_Const(MetaProof):
+@concrete_Rem_term
+class Rem_Env_Not_Contain_Const(RemProof):
     '''
-    no-in-global
+    not-in-global
     ```
     c ∉ E
     ```
     The proof object for `c ∉ E`.
     '''
 
-    def __init__(self, const : Const, E : Environment):
-        Meta_Sys_type_check(const, Const)
-        Meta_Sys_type_check(E, Environment)
+    def __init__(self, c : Const, E : Environment):
+        '''
+        Parameters -> Rule Terms:
+        - `c` -> `c`
+        - `E` -> `E`
+        '''
+        self.Rem_type_check(c, Const, 'c')
+        self.Rem_type_check(E, Environment, 'E')
 
-        for const_dec in E.ls:
-            if const_dec.c == const:
-                raise Meta_Sys_Error(f"The constant '{const}' is contained in the environment.")
+        for c_dec in E.ls:
+            self.Rem_other_check(c_dec.c != c, f"The constant '{c}' is contained in the environment.")
         
-        self.__const = const
+        self.__c = c
         self.__E = E
 
     @property
-    def const(self) -> Const:
-        return self.__const
+    def c(self) -> Const:
+        return self.__c
     
     @property
     def E(self) -> Environment:
@@ -165,11 +180,11 @@ class MP_Env_Not_Contain_Const(MetaProof):
         return ""
 
     def conclusion(self) -> str:
-        return f"{self.const} ∉ {self.E}"
+        return f"{self.c} ∉ {self.E}"
 
 
-@concrete_term
-class MP_Env_Contain_Const(MetaProof):
+@concrete_Rem_term
+class Rem_Env_Contain_Const(RemProof):
     '''
     const-in-global
     ```
@@ -178,25 +193,29 @@ class MP_Env_Contain_Const(MetaProof):
     The proof object for `c ∈ E`.
     '''
 
-    def __init__(self, const : Const, E : Environment):
-        Meta_Sys_type_check(const, Const)
-        Meta_Sys_type_check(E, Environment)
+    def __init__(self, c : Const, E : Environment):
+        '''
+        Parameters -> Rule Terms:
+        - `c` -> `c`
+        - `E` -> `E`
+        '''
+        self.Rem_type_check(c, Const, 'c')
+        self.Rem_type_check(E, Environment, 'E')
 
         contains = False
-        for const_dec in E.ls:
-            if const_dec.c == const:
+        for c_dec in E.ls:
+            if c_dec.c == c:
                 contains = True
                 break
 
-        if not contains:
-            raise Meta_Sys_Error(f"The constant '{const}' is not contained in the environment.")
+        self.Rem_other_check(contains, f"The constant '{c}' is not contained in the environment.")
         
-        self.__const = const
+        self.__c = c
         self.__E = E
 
     @property
-    def const(self) -> Const:
-        return self.__const
+    def c(self) -> Const:
+        return self.__c
     
     @property
     def E(self) -> Environment:
@@ -206,11 +225,11 @@ class MP_Env_Contain_Const(MetaProof):
         return ""
 
     def conclusion(self) -> str:
-        return f"{self.const} ∈ {self.E}"
+        return f"{self.c} ∈ {self.E}"
 
 
-@concrete_term
-class MP_Env_Contain_Typing(MetaProof):
+@concrete_Rem_term
+class Rem_Env_Contain_Typing(RemProof):
     '''
     assum-in-global
     ```
@@ -219,32 +238,37 @@ class MP_Env_Contain_Typing(MetaProof):
     The proof object for `(c : T) ∈ E`.
     '''
 
-    def __init__(self, const_typing : GlobalTyping, E : Environment):
-        Meta_Sys_type_check(const_typing, GlobalTyping)
-        Meta_Sys_type_check(E, Environment)
+    def __init__(self, c_typing : GlobalTyping, E : Environment):
+        '''
+        Parameters -> Rule Terms:
+        - `c_typing` -> `c : T`
+        - `E` -> `E`
+        '''
+
+        self.Rem_type_check(c_typing, GlobalTyping, 'c : T')
+        self.Rem_type_check(E, Environment, 'E')
 
         contains = False
-        for const_dec in E.ls:
-            if isinstance(const_dec, GlobalTyping):
-                if const_dec == const_typing:
+        for c_dec in E.ls:
+            if isinstance(c_dec, GlobalTyping):
+                if c_dec == c_typing:
                     contains = True
                     break
-            elif isinstance(const_dec, GlobalDef):
-                if const_dec.c == const_typing.c and const_dec.T == const_typing.T:
+            elif isinstance(c_dec, GlobalDef):
+                if c_dec.c == c_typing.c and c_dec.T == c_typing.T:
                     contains = True
                     break
             else:
                 raise Exception()
                 
-        if not contains:
-            raise Meta_Sys_Error(f"The declaration '{const_typing}' is not contained in the environment.")
+        self.Rem_other_check(contains, f"The declaration '{c_typing}' is not contained in the environment.")
         
-        self.__const_typing = const_typing
+        self.__c_typing = c_typing
         self.__E = E
 
     @property
-    def const_typing(self) -> GlobalTyping:
-        return self.__const_typing
+    def c_typing(self) -> GlobalTyping:
+        return self.__c_typing
     
     @property
     def E(self) -> Environment:
@@ -254,11 +278,11 @@ class MP_Env_Contain_Typing(MetaProof):
         return ""
 
     def conclusion(self) -> str:
-        return f"{self.const_typing} ∈ {self.E}"
+        return f"{self.c_typing} ∈ {self.E}"
     
 
-@concrete_term
-class MP_Env_Contain_Def(MetaProof):
+@concrete_Rem_term
+class Rem_Env_Contain_Def(RemProof):
     '''
     def-in-global
     ```
@@ -267,19 +291,24 @@ class MP_Env_Contain_Def(MetaProof):
     The proof object for `(c := t : T) ∈ E`.
     '''
     
-    def __init__(self, const_def : GlobalDef, E : Environment):
-        Meta_Sys_type_check(const_def, GlobalDef)
-        Meta_Sys_type_check(E, Environment)
+    def __init__(self, c_def : GlobalDef, E : Environment):
+        '''
+        Parameters -> Rule Terms:
+        - `c_def` -> `c := t : T`
+        - `E` -> `E`
+        '''
 
-        if const_def not in E.ls:
-            raise Meta_Sys_Error(f"The definition '{const_def}' is not contained in the environment.")
+        self.Rem_type_check(c_def, GlobalDef, 'c := t : T')
+        self.Rem_type_check(E, Environment, 'E')
+
+        self.Rem_other_check(c_def in E.ls, f"The definition '{c_def}' is not contained in the environment.")
         
-        self.__const_def = const_def
+        self.__c_def = c_def
         self.__E = E
 
     @property
-    def const_def(self) -> GlobalDef:
-        return self.__const_def
+    def c_def(self) -> GlobalDef:
+        return self.__c_def
     
     @property
     def E(self) -> Environment:
@@ -289,4 +318,4 @@ class MP_Env_Contain_Def(MetaProof):
         return ""
 
     def conclusion(self) -> str:
-        return f"{self.const_def} ∈ {self.E}"
+        return f"{self.c_def} ∈ {self.E}"
