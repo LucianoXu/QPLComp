@@ -32,7 +32,7 @@ class ParsingEnv:
 
 precedence = (
     ('left', '+', '-'),
-    ('right', 'SASAKI_IMPLY'),
+    ('right', 'SASAKI_IRemLY'),
     ('left', 'SASAKI_CONJUNCT'),
     ('left', 'DISJUNCT'),
     ('left', 'CONJUNCT'),
@@ -73,8 +73,8 @@ def p_eiqopt(p):
             | eiqopt OTIMES eiqopt
             | eiqopt DISJUNCT eiqopt
             | eiqopt CONJUNCT eiqopt
-            | eiqopt COMPLEMENT
-            | eiqopt SASAKI_IMPLY eiqopt
+            | eiqopt CORemLEMENT
+            | eiqopt SASAKI_IRemLY eiqopt
             | eiqopt SASAKI_CONJUNCT eiqopt
     '''
     if type_match(p, ('IQOPT', 'variable')):
@@ -105,9 +105,9 @@ def p_eiqopt(p):
         p[0] = EIQOptDisjunct(p[1], p[3], ParsingEnv.env)
     elif type_match(p, ('eiqopt', 'CONJUNCT', 'eiqopt')):
         p[0] = EIQOptConjunct(p[1], p[3], ParsingEnv.env)
-    elif type_match(p, ('eiqopt', 'COMPLEMENT')):
+    elif type_match(p, ('eiqopt', 'CORemLEMENT')):
         p[0] = EIQOptComplement(p[1], ParsingEnv.env)
-    elif type_match(p, ('eiqopt', 'SASAKI_IMPLY', 'eiqopt')):
+    elif type_match(p, ('eiqopt', 'SASAKI_IRemLY', 'eiqopt')):
         p[0] = EIQOptSasakiImply(p[1], p[3], ParsingEnv.env)
     elif type_match(p, ('eiqopt', 'SASAKI_CONJUNCT', 'eiqopt')):
         p[0] = EIQOptSasakiConjunct(p[1], p[3], ParsingEnv.env)
@@ -131,8 +131,8 @@ def p_eqopt(p):
             | eqopt OTIMES eqopt
             | eqopt DISJUNCT eqopt
             | eqopt CONJUNCT eqopt
-            | eqopt COMPLEMENT
-            | eqopt SASAKI_IMPLY eqopt
+            | eqopt CORemLEMENT
+            | eqopt SASAKI_IRemLY eqopt
             | eqopt SASAKI_CONJUNCT eqopt
     '''
     if type_match(p, ('variable',)):
@@ -161,9 +161,9 @@ def p_eqopt(p):
         p[0] = EQOptDisjunct(p[1], p[3], ParsingEnv.env)
     elif type_match(p, ('eqopt', 'CONJUNCT', 'eqopt')):
         p[0] = EQOptConjunct(p[1], p[3], ParsingEnv.env)
-    elif type_match(p, ('eqopt', 'COMPLEMENT')):
+    elif type_match(p, ('eqopt', 'CORemLEMENT')):
         p[0] = EQOptComplement(p[1], ParsingEnv.env)
-    elif type_match(p, ('eqopt', 'SASAKI_IMPLY', 'eqopt')):
+    elif type_match(p, ('eqopt', 'SASAKI_IRemLY', 'eqopt')):
         p[0] = EQOptSasakiImply(p[1], p[3], ParsingEnv.env)
     elif type_match(p, ('eqopt', 'SASAKI_CONJUNCT', 'eqopt')):
         p[0] = EQOptSasakiConjunct(p[1], p[3], ParsingEnv.env)
@@ -200,11 +200,11 @@ def p_qvar_pre(p):
 def p_num(p):
     '''
     num : FLOATNUM
-        | COMPLEXNUM
+        | CORemLEXNUM
     '''
     if p.slice[1].type == 'FLOATNUM':
         p[0] = float(p[1])
-    elif p.slice[1].type == 'COMPLEXNUM':
+    elif p.slice[1].type == 'CORemLEXNUM':
         p[0] = complex(p[1])
     else:
         raise Exception()

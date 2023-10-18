@@ -12,14 +12,14 @@ reserved = {
 tokens = [
     'ID',
     'FLOATNUM',
-    'COMPLEXNUM',
+    'CORemLEXNUM',
 
     'OTIMES',
     'DAGGER',
     'DISJUNCT',
     'CONJUNCT',
-    'COMPLEMENT',
-    'SASAKI_IMPLY',
+    'CORemLEMENT',
+    'SASAKI_IRemLY',
     'SASAKI_CONJUNCT',
  ] + list(reserved.values())
  
@@ -29,14 +29,14 @@ t_OTIMES = r"⊗|\\otimes"
 t_DAGGER = r"†|\^\\dagger"
 t_DISJUNCT = r"∨|\\vee"
 t_CONJUNCT = r"∧|\\wedge"
-t_COMPLEMENT = r"\^⊥|\^\\bot"
-t_SASAKI_IMPLY = r"⇝|\\SasakiImply"
+t_CORemLEMENT = r"\^⊥|\^\\bot"
+t_SASAKI_IRemLY = r"⇝|\\SasakiImply"
 t_SASAKI_CONJUNCT = r"⋒|\\SasakiConjunct"
 
 
 
 # note this token will not include real numbers
-def t_COMPLEXNUM(t):
+def t_CORemLEXNUM(t):
     r'(\(([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)?j\))|(([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)?j)'
     return t
 
